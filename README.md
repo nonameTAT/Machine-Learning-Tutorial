@@ -1,5 +1,8 @@
 # Interactive machine learning study guide (Weeks 1–3)
 
+**Live site: <https://nonametat.github.io/Machine-Learning-Tutorial/>** (redeployed to GitHub Pages on every push to
+`main`).
+
 A local study website for introductory machine learning. Every lesson follows the same arc: motivation → intuition →
 precise statement → step-by-step derivation → interactive experiment → misconception checks → central idea.
 
