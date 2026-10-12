@@ -1152,6 +1152,22 @@ li {
   font-family: var(--font-ui);
   font-size: 14px;
 }
+.plot-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 24px;
+  text-align: center;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+.plot-error p {
+  margin: 0;
+  max-width: 52ch;
+}
 
 /* ============ reveal / steps ============ */
 .reveal {
