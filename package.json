@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Interactive machine learning study guide (Weeks 1–3: regression, classification, Bayesian classification)",
+  "description": "Interactive machine learning study guide (Weeks 1–4: regression, classification, Bayesian classification, tree learning)",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit -p tsconfig.json",

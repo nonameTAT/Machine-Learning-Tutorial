@@ -1,4 +1,4 @@
-# Interactive machine learning study guide (Weeks 1–3)
+# Interactive machine learning study guide (Weeks 1–4)
 
 **Live site: <https://nonametat.github.io/Machine-Learning-Tutorial/>** (redeployed to GitHub Pages on every push to
 `main`).
@@ -10,8 +10,9 @@ A local study website for introductory machine learning, with reference to comp9
 | 1 · Regression | 13 lessons, practice, reference sheet, readiness |
 | 2 · Classification | 18 lessons, practice, reference sheet, readiness |
 | 3 · Bayesian classification | 17 lessons, practice Q1–Q12, reference sheet, readiness |
+| 4 · Tree learning | 17 lessons, practice Q1–Q12, reference sheet, readiness |
 
-Switch weeks with the **Week 1 / 2 / 3** buttons in the top bar; each week has its own sidebar, progress bar and
+Switch weeks with the **Week 1 / 2 / 3 / 4** buttons in the top bar; each week has its own sidebar, progress bar and
 pager.
 
 ## Run it
@@ -57,8 +58,20 @@ PlayTennis classifier with exact fractions (any query, missing values, Laplace s
 scores any typed email under both text models. Every worked number is reproduced exactly (e.g. 1/189 vs
 18/875, 2/9 vs 4/27, 0.054 vs 0.1728).
 
+**Week 4 — Tree learning.** 17 lessons: trees as adaptive partitions, what trees can represent (Boolean functions,
+completeness), top-down induction, entropy, information gain, growing PlayTennis, gain ratio and identifiers, numeric
+thresholds, greedy search and XOR, overfitting and pre-pruning, training error with conflicting labels, reduced-error
+pruning and the one-SE rule, rules/costs/missing values, regression trees, regression splits (including the Hammond
+organs), model trees, and kernel smoothing. Labs include a point traced through a tree and its partition, a staircase
+approximating a diagonal, trees for any Boolean function under any variable order, gain drawn as areas, a
+grow-it-yourself tree for PlayTennis (gain or gain ratio, with or without the Day identifier) and for the organ prices,
+a threshold scanner, depth-versus-error and reduced-error pruning on noisy 2-D data, fractional routing of missing
+values with exact fractions, a regression stump with draggable points, constant versus linear leaves on cos(πx), and a
+kernel smoother drawn like the classic two-panel figure. Every worked number is reproduced (e.g. gains 0.266 vs 0.121,
+Outlook 0.247, 2/12 unavoidable errors, Q = 4/9, Epanechnikov 4/7).
+
 **Progress tracking** in `localStorage`: lessons marked understood, quiz answers (per lesson), self-check
-lists, practice ratings (`practice`, `w2.practice`, `w3.practice`), notes per page, last page per week, theme.
+lists, practice ratings (`practice`, `w2.practice`, …, `w4.practice`), notes per page, last page per week, theme.
 Nothing leaves the browser; “Reset all progress” is on each week’s overview page and clears every week.
 
 ## Adding content
@@ -79,16 +92,16 @@ src/content/week3/
   Reference.tsx   optional printable formula sheet
 ```
 
-**Add a week.** Copy `src/content/_template/` to `src/content/week4/` and set `n`, `title` and `summary` in its
+**Add a week.** Copy `src/content/_template/` to `src/content/week5/` and set `n`, `title` and `summary` in its
 `index.ts`. Folders named `week*` are picked up automatically; the week switch, the pager from the previous week
-and the “Later weeks” list on week 1 update themselves. Routes become `#/w4-<slug>`.
+and the “Later weeks” list on week 1 update themselves. Routes become `#/w5-<slug>`.
 
 **Add a lesson.** Write `lessons/MyLesson.tsx` (start from `_template/lessons/ExampleLesson.tsx`), then add an entry
 to a part in `index.ts`:
 
 ```ts
 {
-  slug: 'perceptron',                 // route #/w4-perceptron; don't rename once published
+  slug: 'perceptron',                 // route #/w5-perceptron; don't rename once published
   title: 'The perceptron',
   question: 'How does a single neuron learn a linear boundary?',
   page: Perceptron,
@@ -122,7 +135,7 @@ The self-check list comes from `checks` in `index.ts`; don't add a `<Checklist>`
 src/
   App.tsx                 shell: top bar + week switch, sidebar, hash routing, outline, notes, pager
   content/index.ts        discovers src/content/week*/index.ts
-  content/week1…3/        the weeks (see above); content/_template/ is the starter week (not shown on the site)
+  content/week1…4/        the weeks (see above); content/_template/ is the starter week (not shown on the site)
   course/types.ts         defineWeek and the WeekDef / LessonDef / Page types
   course/registry.ts      expands weeks into pages and routes; checks for duplicate routes
   course/overview.tsx     overview page and its blocks: WeekHero, StudyRoute, LaterWeeks, YourData
@@ -132,6 +145,7 @@ src/
   lib/num.ts              seeded RNG, statistics, QR least squares, ridge, LASSO (coordinate descent)
   lib/classify.ts         sigmoid / log loss, Minkowski distances, k-NN vote with tie rules, confusion counts, ROC
   lib/frac.ts             exact fractions for the Naive Bayes counting labs
+  lib/tree.ts             entropy, gain, gain ratio; greedy classification trees with reduced-error pruning; regression trees
   lib/storage.ts          localStorage-backed state hook; lib/migrate.ts upgrades older saved progress
   styles/global.css       design tokens (light/dark) and all styles
 ```
