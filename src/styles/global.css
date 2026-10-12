@@ -43,6 +43,8 @@
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   --topbar: 54px;
   --sidebar: 278px;
+  --pic-bg: transparent;
+  --pic-invert: none;
   color-scheme: light;
 }
 
@@ -82,6 +84,8 @@
     --k-key: #facc15;
     --k-theorem: #c4b5fd;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+    --pic-bg: #ffffff;
+    --pic-invert: invert(1) hue-rotate(180deg);
     color-scheme: dark;
   }
 }
@@ -120,6 +124,8 @@
   --k-key: #facc15;
   --k-theorem: #c4b5fd;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --pic-bg: #ffffff;
+  --pic-invert: invert(1) hue-rotate(180deg);
   color-scheme: dark;
 }
 
@@ -1424,6 +1430,21 @@ td input.input {
   color: var(--muted);
   margin-top: 6px;
   line-height: 1.45;
+}
+.pic img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 6px;
+  background: var(--pic-bg);
+}
+.pic img.invert {
+  background: none;
+  filter: var(--pic-invert);
+}
+.pic figcaption {
+  text-align: center;
 }
 
 /* ============ footer ============ */

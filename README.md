@@ -57,34 +57,83 @@ PlayTennis classifier with exact fractions (any query, missing values, Laplace s
 scores any typed email under both text models. Every worked number is reproduced exactly (e.g. 1/189 vs
 18/875, 2/9 vs 4/27, 0.054 vs 0.1728).
 
-**Progress tracking** in `localStorage`: lessons marked understood, quiz answers, self-check
+**Progress tracking** in `localStorage`: lessons marked understood, quiz answers (per lesson), self-check
 lists, practice ratings (`practice`, `w2.practice`, `w3.practice`), notes per page, last page per week, theme.
 Nothing leaves the browser; “Reset all progress” is on each week’s overview page and clears every week.
+
+## Adding content
+
+Each week is one folder, `src/content/week<N>/`, and its `index.ts` is the week's syllabus: title, summary, parts, and for
+each lesson its slug, title, guiding question, page component and self-check items. The shell builds everything else
+from that file: routes, sidebar, progress bar, overview cards, lesson numbers, pager, end-of-lesson checklist and the
+readiness page.
+
+```text
+src/content/week3/
+  index.ts        syllabus (defineWeek)
+  Overview.tsx    optional overview body (sections around <StudyRoute />)
+  lessons/*.tsx   one file per lesson: text, maths, pictures, labs, quizzes
+  labs/*.tsx      interactive visualisations used by the lessons
+  images/         pictures imported by lessons (create when needed)
+  practice.tsx    optional practice problems (PracticeDef)
+  Reference.tsx   optional printable formula sheet
+```
+
+**Add a week.** Copy `src/content/_template/` to `src/content/week4/` and set `n`, `title` and `summary` in its
+`index.ts`. Folders named `week*` are picked up automatically; the week switch, the pager from the previous week
+and the “Later weeks” list on week 1 update themselves. Routes become `#/w4-<slug>`.
+
+**Add a lesson.** Write `lessons/MyLesson.tsx` (start from `_template/lessons/ExampleLesson.tsx`), then add an entry
+to a part in `index.ts`:
+
+```ts
+{
+  slug: 'perceptron',                 // route #/w4-perceptron; don't rename once published
+  title: 'The perceptron',
+  question: 'How does a single neuron learn a linear boundary?',
+  page: Perceptron,
+  checks: ['Trace one perceptron update by hand.'],
+},
+```
+
+Lessons are numbered by their position, so inserting one in the middle renumbers the rest without touching any
+saved progress (everything is stored under slugs). To add a part, add `{ title: 'III · …', lessons: [...] }`.
+
+**Inside a lesson** (all from `src/components/`):
+
+| Building block | Use |
+| --- | --- |
+| `<Sec title>` | a section; also an “On this page” entry |
+| `<M t>` / `<MB t>` | inline / display KaTeX (shared macros in `Math.tsx`) |
+| `<Callout kind>` | intuition, definition, warning, note, example, key, theorem |
+| `<Picture src alt caption width invert>` | an image: `import fig from '../images/fig.png'`; `invert` suits black-on-white line art in dark mode |
+| `<Lab title purpose>` + a lab component | an interactive visualisation; labs use `Chart` (SVG), `Plot` (Plotly 3-D) and `Slider`, `Segmented`, `Toggle`, `Readout` |
+| `<TryThis items>` | guided experiments under a lab |
+| `<Steps steps>` | a derivation revealed one line at a time |
+| `<Quiz id="q1" q options>` | a multiple-choice check; ids only need to be unique within the lesson |
+| `<Table>`, `<Figure>`, `<Reveal>` | tables, captioned inline SVG, hidden answers |
+
+The self-check list comes from `checks` in `index.ts`; don't add a `<Checklist>` to the lesson. Practice problems
+(`practice.tsx`) refer to lessons by slug.
 
 ## Code map
 
 ```text
 src/
-  App.tsx                     shell: top bar + week switch, sidebar, hash routing, outline, notes, pager
-  lessons/registry.ts         WEEKS, parts and lesson list (id, week, title, question, …)
-  lessons/pages.ts            route id → page component
-  lessons/L01…L13*.tsx        week 1 lessons; checks.ts, Practice.tsx, Reference.tsx, Readiness.tsx, Home.tsx
-  lessons/week2/              week 2 lessons L01…L18, checks.ts, Practice2, Reference2, Readiness2, Home2
-  lessons/week3/              week 3 lessons L01…L17, checks.ts, Practice3, Reference3, Readiness3, Home3
-  interactives/*.tsx          week 1 labs
-  interactives/week2/*.tsx    week 2 labs; common.tsx = class markers, region shading, contours
-  interactives/week3/*.tsx    week 3 labs
-  components/                 KaTeX wrapper (Math), SVG chart kit (Chart), Plotly wrapper (Plot), UI pieces,
-                              ProblemSet (practice pages), ReadinessReport (readiness pages)
-  lib/num.ts                  seeded RNG, statistics, QR least squares, ridge, LASSO (coordinate descent)
-  lib/classify.ts             sigmoid / log loss, Minkowski distances, k-NN vote with tie rules, confusion counts, ROC
-  lib/frac.ts                 exact fractions for the Naive Bayes counting labs
-  lib/storage.ts              localStorage-backed state hook
-  styles/global.css           design tokens (light/dark) and all styles
+  App.tsx                 shell: top bar + week switch, sidebar, hash routing, outline, notes, pager
+  content/index.ts        discovers src/content/week*/index.ts
+  content/week1…3/        the weeks (see above); content/_template/ is the starter week (not shown on the site)
+  course/types.ts         defineWeek and the WeekDef / LessonDef / Page types
+  course/registry.ts      expands weeks into pages and routes; checks for duplicate routes
+  course/overview.tsx     overview page and its blocks: WeekHero, StudyRoute, LaterWeeks, YourData
+  course/PracticePage.tsx, ReadinessPage.tsx   generated per week
+  components/             ui.tsx (Sec, Callout, Lab, Picture, Quiz, …), Math (KaTeX), Chart (SVG kit),
+                          chartParts (class markers, regions, contours, arrows), Plot (Plotly), ProblemSet
+  lib/num.ts              seeded RNG, statistics, QR least squares, ridge, LASSO (coordinate descent)
+  lib/classify.ts         sigmoid / log loss, Minkowski distances, k-NN vote with tie rules, confusion counts, ROC
+  lib/frac.ts             exact fractions for the Naive Bayes counting labs
+  lib/storage.ts          localStorage-backed state hook; lib/migrate.ts upgrades older saved progress
+  styles/global.css       design tokens (light/dark) and all styles
 ```
-
-To add a lesson: add an entry to `registry.ts` (with its `week`), create the page component, and map it in `pages.ts`.
-To add a week: add its parts and lessons to `registry.ts`, an entry to `WEEKS`, and route ids that do not collide with
-earlier weeks (weeks 2 and 3 use `w2-` and `w3-` prefixes).
 
 Stack: React 19, TypeScript, Vite 8, KaTeX, Plotly (lazy-loaded), plain CSS.

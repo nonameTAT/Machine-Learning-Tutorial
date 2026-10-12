@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 110" width="520" height="110" font-family="system-ui, sans-serif" font-size="16">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#222" />
+    </marker>
+  </defs>
+  <g fill="none" stroke="#222" stroke-width="2">
+    <rect x="10" y="30" width="120" height="50" rx="8" />
+    <rect x="200" y="30" width="120" height="50" rx="8" />
+    <rect x="390" y="30" width="120" height="50" rx="8" />
+    <path d="M130 55 H198" marker-end="url(#a)" />
+    <path d="M320 55 H388" marker-end="url(#a)" />
+  </g>
+  <g fill="#222" text-anchor="middle">
+    <text x="70" y="60">data</text>
+    <text x="260" y="60">model</text>
+    <text x="450" y="60">prediction</text>
+  </g>
+</svg>

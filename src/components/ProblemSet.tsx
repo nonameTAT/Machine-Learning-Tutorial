@@ -7,7 +7,7 @@ export type PStatus = 'none' | 'shaky' | 'solid';
 export interface Problem {
   id: string;
   title: string;
-  /** route id of the lesson the problem practises */
+  /** slug of the lesson the problem practises (as in the week's index.ts) */
   lesson: string;
   q: ReactNode;
   hint?: ReactNode;
@@ -23,7 +23,7 @@ export interface ProblemGroup {
 
 export const problemIds = (groups: ProblemGroup[]) => groups.flatMap((g) => g.items.map((p) => p.id));
 
-function ProblemCard({ p, storeKey }: { p: Problem; storeKey: string }) {
+function ProblemCard({ p, storeKey, lessonRoute }: { p: Problem; storeKey: string; lessonRoute: (slug: string) => string }) {
   const [status, setStatus] = useStored<Record<string, PStatus>>(storeKey, {});
   const st = status[p.id] ?? 'none';
   const opts: { v: PStatus; label: string }[] = [
@@ -37,7 +37,7 @@ function ProblemCard({ p, storeKey }: { p: Problem; storeKey: string }) {
         <span>
           <span className="problem-id">{p.id}</span>
           <span className="problem-title">{p.title}</span>{' '}
-          <a className="kbd-hint" href={`#/${p.lesson}`}>
+          <a className="kbd-hint" href={`#/${lessonRoute(p.lesson)}`}>
             (lesson)
           </a>
         </span>
@@ -61,7 +61,18 @@ function ProblemCard({ p, storeKey }: { p: Problem; storeKey: string }) {
 }
 
 /** A practice page: grouped problems with hints, solutions and a self-rating stored under `storeKey`. */
-export function ProblemSet({ groups, storeKey, children }: { groups: ProblemGroup[]; storeKey: string; children?: ReactNode }) {
+export function ProblemSet({
+  groups,
+  storeKey,
+  lessonRoute,
+  children,
+}: {
+  groups: ProblemGroup[];
+  storeKey: string;
+  /** lesson slug → route id */
+  lessonRoute: (slug: string) => string;
+  children?: ReactNode;
+}) {
   const [status] = useStored<Record<string, PStatus>>(storeKey, {});
   const [filter, setFilter] = useState<'all' | 'todo' | 'shaky'>('all');
   const ids = problemIds(groups);
@@ -90,7 +101,7 @@ export function ProblemSet({ groups, storeKey, children }: { groups: ProblemGrou
         <Sec key={g.key} title={g.title}>
           <p className="muted">{g.intro}</p>
           {g.items.filter(shown).map((p) => (
-            <ProblemCard key={p.id} p={p} storeKey={storeKey} />
+            <ProblemCard key={p.id} p={p} storeKey={storeKey} lessonRoute={lessonRoute} />
           ))}
         </Sec>
       ))}

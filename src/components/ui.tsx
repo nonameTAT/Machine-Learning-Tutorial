@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useContext, useId, useState, type ReactNode } from 'react';
+import { PageContext } from '../course/context';
 import { useStored } from '../lib/storage';
 
 /* ---------------- structure ---------------- */
@@ -255,6 +256,25 @@ export function Figure({ children, caption, wide }: { children: ReactNode; capti
   );
 }
 
+/**
+ * A picture (diagram, photo, slide excerpt) with an optional caption. Import the file so Vite
+ * bundles it, then pass the import as `src`:
+ *
+ *   import roc from '../images/roc.png';
+ *   <Picture src={roc} alt="ROC curve for the spam classifier" caption="…" />
+ *
+ * In dark mode, images get a white backing so transparent diagrams stay legible; pass `invert`
+ * for black-on-white line art that should turn light-on-dark instead. `width` caps the size in px.
+ */
+export function Picture({ src, alt, caption, width, invert }: { src: string; alt: string; caption?: ReactNode; width?: number; invert?: boolean }) {
+  return (
+    <figure className="fig pic">
+      <img src={src} alt={alt} loading="lazy" className={invert ? 'invert' : undefined} style={width ? { width } : undefined} />
+      {caption && <figcaption>{caption}</figcaption>}
+    </figure>
+  );
+}
+
 /* ---------------- quizzes & checklists ---------------- */
 
 export interface QuizOption {
@@ -263,10 +283,15 @@ export interface QuizOption {
   why: ReactNode;
 }
 
-/** A multiple-choice check. The chosen answer is remembered between visits. */
+/**
+ * A multiple-choice check. The chosen answer is remembered between visits, stored under the
+ * page's route id, so `id` only has to be unique within one lesson ("q1", "q2", …).
+ */
 export function Quiz({ id, q, options }: { id: string; q: ReactNode; options: QuizOption[] }) {
-  const [picked, setPickedRaw] = useStored<number | null>(`quiz.${id}`, null);
-  const [, setResult] = useStored<boolean | null>(`quizres.${id}`, null);
+  const page = useContext(PageContext);
+  const key = page ? `${page.id}.${id}` : id;
+  const [picked, setPickedRaw] = useStored<number | null>(`quiz.${key}`, null);
+  const [, setResult] = useStored<boolean | null>(`quizres.${key}`, null);
   const correctIdx = options.findIndex((o) => o.correct);
   const setPicked = (i: number | null) => {
     setPickedRaw(i);

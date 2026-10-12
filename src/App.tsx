@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { LESSONS, WEEKS, lessonIndex, weekLessons, weekMeta, weekPages, type LessonMeta } from './lessons/registry';
-import { PAGES } from './lessons/pages';
+import { Checklist } from './components/ui';
+import { PageContext, WeeksContext } from './course/context';
+import { DEFAULT_ROUTE, PAGES, WEEKS } from './course/registry';
+import type { Page, Week } from './course/types';
 import { useStored } from './lib/storage';
 import { useThemeController, type ThemePref } from './lib/theme';
 
 function useHashRoute(): [string, (id: string) => void] {
   const parse = () => {
     const h = window.location.hash.replace(/^#\/?/, '').split('#')[0];
-    return LESSONS.some((l) => l.id === h) ? h : 'home';
+    return PAGES.has(h) ? h : DEFAULT_ROUTE;
   };
   const [route, setRoute] = useState(parse);
   useEffect(() => {
@@ -24,19 +26,17 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const theme = useThemeController();
   const mainRef = useRef<HTMLElement>(null);
-  const meta = LESSONS[lessonIndex(route)];
-  const week = weekMeta(meta.week);
+  const meta = PAGES.get(route)!;
+  const week = meta.week;
 
   useEffect(() => {
-    setLast((prev) => ({ ...prev, [meta.week]: route }));
+    setLast((prev) => ({ ...prev, [week.n]: route }));
     setNavOpen(false);
     window.scrollTo({ top: 0 });
     const site = `ML study guide · Week ${week.n}`;
-    document.title = meta.num && meta.lesson ? `${meta.num}. ${meta.title} · ${site}` : `${meta.title} · ${site}`;
+    document.title = meta.kind === 'lesson' ? `${meta.num}. ${meta.title} · ${site}` : `${meta.title} · ${site}`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route]);
-
-  const Page = PAGES[route];
 
   return (
     <div className={`app ${navOpen ? 'nav-open' : ''}`}>
@@ -67,14 +67,19 @@ export default function App() {
         </div>
       </header>
 
-      <Sidebar route={route} week={week.n} />
+      <Sidebar route={route} week={week} />
       <div className="scrim" onClick={() => setNavOpen(false)} />
 
       <main ref={mainRef} className="main" key={route}>
         <div className="content">
-          {meta.id !== week.home && <LessonHeader meta={meta} />}
-          <Page />
-          {meta.id !== week.home && <LessonFooter meta={meta} go={go} />}
+          <WeeksContext.Provider value={WEEKS}>
+            <PageContext.Provider value={meta}>
+              {meta.kind !== 'overview' && <LessonHeader meta={meta} />}
+              <meta.Component />
+              {meta.checks.length > 0 && <Checklist id={meta.id} items={meta.checks} />}
+              {meta.kind !== 'overview' && <LessonFooter meta={meta} go={go} />}
+            </PageContext.Provider>
+          </WeeksContext.Provider>
         </div>
         <Outline route={route} mainRef={mainRef} />
       </main>
@@ -105,7 +110,7 @@ function WeekSwitch({ current }: { current: number }) {
   return (
     <nav className="week-switch" aria-label="Week">
       {WEEKS.map((w) => {
-        const target = last[w.n] && lessonIndex(last[w.n]) >= 0 ? last[w.n] : w.home;
+        const target = last[w.n] && PAGES.get(last[w.n])?.week === w ? last[w.n] : w.home;
         return (
           <a key={w.n} href={`#/${w.n === current ? w.home : target}`} className={w.n === current ? 'on' : ''} aria-current={w.n === current ? 'page' : undefined} title={`Week ${w.n} · ${w.title}`}>
             <span className="ws-full">Week {w.n}</span>
@@ -117,10 +122,9 @@ function WeekSwitch({ current }: { current: number }) {
   );
 }
 
-function Sidebar({ route, week }: { route: string; week: number }) {
+function Sidebar({ route, week }: { route: string; week: Week }) {
   const [done] = useStored<Record<string, boolean>>('done', {});
-  const lessons = weekLessons(week);
-  const pages = weekPages(week);
+  const { lessons, pages } = week;
   const n = lessons.filter((l) => done[l.id]).length;
   return (
     <nav className="sidebar" aria-label="Lessons">
@@ -132,10 +136,10 @@ function Sidebar({ route, week }: { route: string; week: number }) {
           </span>
         </div>
         <div className="progress-bar">
-          <div style={{ width: `${(100 * n) / lessons.length}%` }} />
+          <div style={{ width: `${lessons.length ? (100 * n) / lessons.length : 0}%` }} />
         </div>
       </div>
-      {weekMeta(week).parts.map((p) => (
+      {week.parts.map((p) => (
         <div key={p} className="nav-part">
           <div className="nav-part-title">{p}</div>
           {pages.filter((l) => l.part === p).map((l) => (
@@ -151,14 +155,14 @@ function Sidebar({ route, week }: { route: string; week: number }) {
   );
 }
 
-function LessonHeader({ meta }: { meta: LessonMeta }) {
+function LessonHeader({ meta }: { meta: Page }) {
   return (
     <header className="lesson-head">
       <div className="lesson-kicker">
         {meta.part}
       </div>
       <h1>
-        {meta.lesson && <span className="lesson-num">{meta.num}</span>}
+        {meta.kind === 'lesson' && <span className="lesson-num">{meta.num}</span>}
         {meta.title}
       </h1>
       <p className="lesson-question">{meta.question}</p>
@@ -166,14 +170,14 @@ function LessonHeader({ meta }: { meta: LessonMeta }) {
   );
 }
 
-function LessonFooter({ meta, go }: { meta: LessonMeta; go: (id: string) => void }) {
+function LessonFooter({ meta, go }: { meta: Page; go: (id: string) => void }) {
   const [done, setDone] = useStored<Record<string, boolean>>('done', {});
   const [notes, setNotes] = useStored<string>(`notes.${meta.id}`, '');
   // Page through one week; the last page of a week leads on to the next week's overview.
-  const pages = weekPages(meta.week);
-  const i = pages.findIndex((l) => l.id === meta.id);
+  const pages = meta.week.pages;
+  const i = pages.indexOf(meta);
   const prev = pages[i - 1];
-  const nextWeek = WEEKS.find((w) => w.n === meta.week + 1);
+  const nextWeek = WEEKS[WEEKS.indexOf(meta.week) + 1];
   const next = pages[i + 1] ?? (nextWeek && { id: nextWeek.home, title: `Week ${nextWeek.n}: ${nextWeek.title}` });
   return (
     <footer className="lesson-foot">
@@ -186,7 +190,7 @@ function LessonFooter({ meta, go }: { meta: LessonMeta; go: (id: string) => void
           rows={6}
         />
       </details>
-      {meta.lesson && (
+      {meta.kind === 'lesson' && (
         <button className={`btn complete-btn ${done[meta.id] ? 'is-done' : 'btn-primary'}`} onClick={() => setDone({ ...done, [meta.id]: !done[meta.id] })}>
           {done[meta.id] ? '✓ Marked as understood — click to undo' : 'Mark this lesson as understood'}
         </button>
