@@ -1,5 +1,6 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, TryThis } from '../../../components/ui';
+import { NormaliseLab } from '../labs/NormaliseLab';
 import { ScalingLab } from '../labs/ScalingLab';
 
 export default function Scaling() {
@@ -38,6 +39,16 @@ export default function Scaling() {
           It does not make the feature normally distributed. For both, a constant training feature gives a zero denominator: it carries no information,
           so drop it (or state another policy).
         </p>
+        <Lab title="One feature, three scales" purpose="Eight training ages and one test value, on the raw scale and after each normalisation. Both scalers are fitted on the training values only.">
+          <NormaliseLab />
+        </Lab>
+        <TryThis
+          items={[
+            'Move the test value above 52: its min-max value exceeds 1. That is expected for new data, not a reason to refit the scaler.',
+            'Both scalings keep the order and the relative spacing of the values; they only change the origin and the unit.',
+            'Add the unusual training value 95. Min-max now squeezes the eight ordinary ages into [0, 0.41]. The z-scores shrink too, because s more than doubles (9.7 to 20.6). One extreme training value changes both scalers.',
+          ]}
+        />
         <p>
           <strong>Nominal attributes</strong> with no ordering use simple matching instead: distance 1 if the categories differ, 0 if they match.
           Mixing feature types needs care: decide deliberately how much a category mismatch should count relative to a numeric difference.

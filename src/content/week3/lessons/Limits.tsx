@@ -1,5 +1,6 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, Table, TryThis } from '../../../components/ui';
+import { CalibrationLab } from '../labs/CalibrationLab';
 import { DuplicateLab } from '../labs/DuplicateLab';
 
 export default function Limits() {
@@ -16,6 +17,17 @@ export default function Limits() {
           <M t="(0.95, 0.05)" />. Under equal costs the label is right, but the confidence is badly overstated — and a cost-sensitive decision (lesson 5)
           that uses the probability itself can go wrong. NB posteriors are often unrealistically close to 1 or 0.
         </p>
+        <Lab title="Right label, wrong confidence" purpose="One measurement x, with x | A ~ N(+1, 1) and x | B ~ N(−1, 1). Naive Bayes is given the same measurement k times and multiplies k identical factors. Compare its posterior with the true one.">
+          <CalibrationLab />
+        </Lab>
+        <TryThis
+          items={[
+            'Equal priors and τ = ½: both curves cross ½ at x = 0, so every decision agrees. Yet at x = 0.2 the true posterior is 0.60 and Naive Bayes says 0.94.',
+            'Raise τ to 0.8, as if wrongly predicting A were costly. A band appears where the overconfident Naive Bayes posterior clears the threshold but the true one does not.',
+            'Set k = 1: the curves coincide. With no repeated evidence, Naive Bayes is exact here.',
+            'Lower the prior P(A) to 0.2 with τ = ½: the decisions differ in a band too — the double counting outweighs the prior, as the next section shows with odds.',
+          ]}
+        />
       </Sec>
 
       <Sec title="Correlated features double-count evidence">

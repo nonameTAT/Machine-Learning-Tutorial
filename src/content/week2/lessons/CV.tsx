@@ -1,6 +1,7 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, Table, TryThis } from '../../../components/ui';
 import { CVSelectLab, FoldLab } from '../labs/CVLab';
+import { LeakageLab } from '../labs/LeakageLab';
 
 export default function CV() {
   return (
@@ -115,6 +116,21 @@ export default function CV() {
           Fitting a scaler or an imputer on <em>all</em> observations before cross-validation lets the validation folds influence the fitted procedure —
           even though no labels were used. Cross-validation does not fix that, nor does it fix repeatedly peeking at the test set to choose k.
         </Callout>
+        <p>
+          When the leaked step uses the labels, the damage can be dramatic. A classic trap: choose the features that look most predictive using{' '}
+          <em>all</em> the data, then cross-validate only the classifier. The validation folds have already helped choose the features, so the estimate is
+          no longer about unseen data. Feature selection is part of the procedure and must be redone inside every fold.
+        </p>
+        <Lab title="Feature selection outside versus inside the folds" purpose="Twenty datasets in which the labels are assigned at random, so no method can beat 50%. Each is cross-validated twice: once with features selected before CV, once with selection repeated inside every fold.">
+          <LeakageLab />
+        </Lab>
+        <TryThis
+          items={[
+            'With 1000 noise features and 20 kept, selecting outside the folds reports over 90% accuracy on labels that are pure chance. Inside the folds it reports about 50% — the truth.',
+            'Reduce the number of noise features. The leak shrinks, because there are fewer chance correlations to find, but it does not vanish.',
+            'The honest estimates scatter widely around 0.5 from dataset to dataset: a cross-validation estimate from 50 examples has a lot of variance.',
+          ]}
+        />
         <p>
           Finally, the best CV score among many candidates is itself a result of selection, so it tends to be optimistic. That is why the separate test set
           answers the final evaluation question.

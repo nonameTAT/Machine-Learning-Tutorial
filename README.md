@@ -35,8 +35,8 @@ Other options:
 **Week 1 — Regression.** 13 lessons: what is learned, loss functions, statistics, the
 least-squares line, normal equations, gradient descent, maximum likelihood, assumptions, polynomial/indicator features,
 ridge & LASSO, validation & metrics, k-NN/local regression, bias–variance. Labs (SVG; Plotly only for the 3-D views)
-include a residual playground, OLS calculator, gradient descent on loss contours, regularisation paths, and a
-bias–variance simulation.
+include a residual playground, squared versus absolute error with a draggable outlier, covariance as signed areas, an
+OLS calculator, gradient descent on loss contours, regularisation paths, and a bias–variance simulation.
 
 **Week 2 — Classification.** 18 lessons: classifier outputs and generative vs discriminative learning, the basic
 linear (nearest-centroid) classifier, the sigmoid and thresholds, deriving log loss, fitting logistic regression by
@@ -44,8 +44,9 @@ gradient descent, generalisation and cross-validation, data types, confusion-mat
 Minkowski distances, metric axioms, exemplars (mean/median/medoid), the k-NN vote, feature scaling, choosing k and
 distance weighting, evaluating lazy learners (LOOCV), and the curse of dimensionality. Every lesson has a lab — e.g. a
 Bayes-rule posterior explorer, draggable class means with the w-vector and boundary, gradient descent on log-loss
-contours (including separable data), a fold diagram and k-selection by K-fold CV, an editable confusion matrix, a
-threshold sweep on the ROC curve, p-balls and a triangle-inequality tester, k-NN decision regions, scaling
+contours (including separable data), a least-squares line versus a logistic curve on 0/1 labels, a fold diagram and
+k-selection by K-fold CV, feature-selection leakage in CV on pure-noise data, an editable confusion matrix, a threshold
+sweep on the ROC curve, AUC as a count of correctly ordered pairs, min-max versus z-score on one feature, p-balls and a triangle-inequality tester, k-NN decision regions, scaling
 neighbourhoods, and distance-concentration simulations. Classic worked examples are reproduced and checked by the
 labs (e.g. AUC = 7/9, the weighted 3-NN flip, one logistic update to β = (0, 0.25)).
 
@@ -54,8 +55,8 @@ minimum expected loss, Gaussian noise and squared error, Bayes optimal and Gibbs
 Bayes assumption, PlayTennis, smoothing and log-space, Gaussian Naive Bayes, text representations, Bernoulli and
 multinomial text models, missing values, and when Naive Bayes misleads. Labs include an area diagram of Bayes’ rule,
 log-odds arithmetic, a 1,000-person base-rate icon array, risk lines for unequal costs, a Bayes-error overlap plot, a
-PlayTennis classifier with exact fractions (any query, missing values, Laplace smoothing), and a spam/ham text lab that
-scores any typed email under both text models. Every worked number is reproduced exactly (e.g. 1/189 vs
+PlayTennis classifier with exact fractions (any query, missing values, Laplace smoothing), a spam/ham text lab that
+scores any typed email under both text models, and true versus Naive Bayes posteriors when evidence is double-counted. Every worked number is reproduced exactly (e.g. 1/189 vs
 18/875, 2/9 vs 4/27, 0.054 vs 0.1728).
 
 **Week 4 — Tree learning.** 17 lessons: trees as adaptive partitions, what trees can represent (Boolean functions,

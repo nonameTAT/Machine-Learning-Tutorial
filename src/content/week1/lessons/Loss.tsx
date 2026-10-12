@@ -1,5 +1,6 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Figure, Lab, Quiz, Sec, TryThis } from '../../../components/ui';
+import { OutlierLab } from '../labs/OutlierLab';
 import { LossShapes, ResidualLab } from '../labs/ResidualLab';
 
 export default function Loss() {
@@ -121,6 +122,20 @@ export default function Loss() {
           Points far from the centre of the <M t="x" /> range have extra leverage: moving them tilts the line around the centroid like a lever. You can
           feel this in the playground by dragging the end points versus the middle point.
         </p>
+        <Lab
+          title="Squared versus absolute error"
+          purpose="Eight points and one that goes astray. Compare the line that minimises the sum of squared residuals with the one that minimises the sum of absolute residuals, and see how hard each point pulls on each line."
+        >
+          <OutlierLab />
+        </Lab>
+        <TryThis
+          items={[
+            'Outlier at the end: the least-squares slope jumps from about 0.81 to 1.78, while the absolute-error line barely moves.',
+            'Look at the pull chart. Under squared error a point pulls with force 2|e|, so the outlier supplies about a third of all the pull on the line (0.34). Under absolute error every point off the line pulls with the same force, 1, so its share is only 1/6.',
+            'Move the outlier to the middle (x = 4). The least-squares line now mostly shifts upward instead of tilting: a point near the centre of the x-range has little leverage.',
+            'Drag the outlier back towards the others and watch the two lines agree again.',
+          ]}
+        />
       </Sec>
 
       <Sec title="Check your understanding">

@@ -1,5 +1,6 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, Steps, Table, TryThis } from '../../../components/ui';
+import { CovarianceLab } from '../labs/CovarianceLab';
 import { CorrelationLab, EstimatorLab } from '../labs/StatsLab';
 
 export default function Stats() {
@@ -131,6 +132,17 @@ export default function Stats() {
           You will meet this ratio again: the least-squares slope is <M t="\hat\theta_1 = \Cov(x,y)/\Var(x) = r\,s_y/s_x" /> (lesson 4). Same
           ingredients, different normalisation — slope carries units, r does not.
         </p>
+        <Lab title="Covariance as signed areas" purpose="Each point and the mean point span a rectangle with area (xᵢ − x̄)(yᵢ − ȳ): blue when both deviations have the same sign, orange when they differ. Covariance adds the areas and divides by N − 1.">
+          <CovarianceLab />
+        </Lab>
+        <TryThis
+          items={[
+            'Rising data: nearly all rectangles are blue and the covariance is clearly positive. Falling data: mostly orange.',
+            'U-shape: the blue and orange areas cancel exactly, so the covariance and r are 0 — although y depends strongly on x. Covariance measures linear association only.',
+            'Measure x in centimetres: the picture and r do not change, but the covariance becomes 100 times larger.',
+            'Drag one point far from both means. Its rectangle can outweigh all the others put together.',
+          ]}
+        />
       </Sec>
 
       <Sec title="What correlation does and does not say">

@@ -1,5 +1,6 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, Steps, Table, TryThis } from '../../../components/ui';
+import { AUCPairsLab } from '../labs/AUCPairsLab';
 import { ROCLab } from '../labs/ROCLab';
 
 export default function ROC() {
@@ -106,6 +107,17 @@ export default function ROC() {
           positive scores 0.95, 0.75, 0.60 beat 3, 2 and 2 of the negative scores 0.85, 0.40, 0.10: <M t="7" /> of <M t="3 \times 3 = 9" /> pairs, so AUC ={' '}
           <M t="7/9" /> again.
         </Callout>
+        <Lab title="AUC as counting pairs" purpose="The unit square is cut into one cell per (positive, negative) pair. A cell is shaded when the positive scores higher. Drag the scores and compare the shaded fraction with the area under the ROC curve.">
+          <AUCPairsLab />
+        </Lab>
+        <TryThis
+          items={[
+            'Worked example: 7 of the 9 cells are shaded, and the area under the curve is 7/9 ≈ 0.778 — the same number.',
+            'Drag the negative scored 0.85 below 0.60. The two pairs it was winning flip, all nine cells are shaded and AUC = 1.',
+            'Move every point by the same amount, or squeeze them together without changing their order: the grid and the AUC stay the same. AUC sees only the ranking.',
+            'Give a positive and a negative exactly the same score: their cell is half shaded. Ties count ½.',
+          ]}
+        />
         <p>
           AUC summarises performance <em>across</em> thresholds. It does not choose a threshold, guarantee well-calibrated probabilities, or tell you the
           accuracy at the operating point you will actually use. Choose τ for the task (on validation data), then report the metrics at that τ.

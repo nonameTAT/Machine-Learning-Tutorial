@@ -1,5 +1,6 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, Steps, Table, TryThis } from '../../../components/ui';
+import { LinearProbLab } from '../labs/LinearProbLab';
 import { SigmoidLab } from '../labs/SigmoidLab';
 
 export default function Sigmoid() {
@@ -21,6 +22,16 @@ export default function Sigmoid() {
           </li>
           <li>A line also reacts to points far from the boundary: an easy, very large x drags the line and shifts where it crosses ½.</li>
         </ul>
+        <Lab title="A line versus a logistic curve on 0/1 labels" purpose="Twelve labelled points with some overlap. Least squares fits a line; logistic regression fits an S-curve. Add one positive far to the right — an easy case — and compare the two boundaries.">
+          <LinearProbLab />
+        </Lab>
+        <TryThis
+          items={[
+            'Turn the far point off. Even then the line leaves [0, 1]: near x = 0 it predicts about −0.35, which no probability can be.',
+            'Slide the far point from 10 to 30. The line’s ½-crossing moves right, from 4.82 to about 5.7; the logistic crossing stays at about 4.89.',
+            'Read the line’s prediction at the far point: about 1.4 — not a probability. Least squares penalises the line for being “too sure” of a correct answer.',
+          ]}
+        />
         <p>
           The fix keeps the linear score but changes the <em>output scale</em>: feed the score through a function that squashes every real number into
           (0, 1).
