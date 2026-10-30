@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useStored } from './storage';
 
-export type ThemePref = 'system' | 'light' | 'dark';
+export type ThemeId = 'light' | 'dark' | 'sepia' | 'nord' | 'gruvbox' | 'dracula' | 'catppuccin-latte' | 'catppuccin-mocha';
+export type ThemePref = 'system' | ThemeId;
+
+/** Palettes are in styles/global.css (light, dark) and styles/themes.css (the rest). */
+export const THEMES: { id: ThemeId; label: string }[] = [
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+  { id: 'sepia', label: 'Sepia' },
+  { id: 'nord', label: 'Nord' },
+  { id: 'gruvbox', label: 'Gruvbox' },
+  { id: 'dracula', label: 'Dracula' },
+  { id: 'catppuccin-latte', label: 'Catppuccin Latte' },
+  { id: 'catppuccin-mocha', label: 'Catppuccin Mocha' },
+];
 
 function systemDark() {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
@@ -19,22 +32,35 @@ export function useThemeController() {
     return () => mq.removeEventListener('change', on);
   }, []);
 
-  const resolved: 'light' | 'dark' = pref === 'system' ? (sysDark ? 'dark' : 'light') : pref;
+  const resolved: ThemeId = pref === 'system' ? (sysDark ? 'dark' : 'light') : pref;
 
   useEffect(() => {
     const el = document.documentElement;
-    if (pref === 'system') delete el.dataset.theme;
-    else el.dataset.theme = pref;
+    const apply = () => {
+      if (pref === 'system') delete el.dataset.theme;
+      else el.dataset.theme = pref;
+    };
+    // paper is white, so a dark theme would print pale text on it
+    const printLight = () => {
+      el.dataset.theme = 'light';
+    };
+    apply();
     el.dataset.resolvedTheme = resolved;
     window.dispatchEvent(new CustomEvent('mlguide-theme', { detail: resolved }));
+    window.addEventListener('beforeprint', printLight);
+    window.addEventListener('afterprint', apply);
+    return () => {
+      window.removeEventListener('beforeprint', printLight);
+      window.removeEventListener('afterprint', apply);
+    };
   }, [pref, resolved]);
 
   return { pref, setPref, resolved };
 }
 
 /** Resolved theme for components that must recolour non-CSS content (Plotly). */
-export function useResolvedTheme(): 'light' | 'dark' {
-  const get = () => (document.documentElement.dataset.resolvedTheme as 'light' | 'dark') ?? (systemDark() ? 'dark' : 'light');
+export function useResolvedTheme(): ThemeId {
+  const get = () => (document.documentElement.dataset.resolvedTheme as ThemeId) ?? (systemDark() ? 'dark' : 'light');
   const [t, setT] = useState(get);
   useEffect(() => {
     const on = () => setT(get());

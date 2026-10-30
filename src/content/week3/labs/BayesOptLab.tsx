@@ -52,7 +52,7 @@ export function BayesOptLab() {
                       strokeWidth={2}
                     />
                     {v > 0.06 && (
-                      <text x={(s.x(x0) + s.x(x0 + v)) / 2} y={s.y(1.48)} textAnchor="middle" className="anno-strong" style={{ fill: '#fff' }}>
+                      <text x={(s.x(x0) + s.x(x0 + v)) / 2} y={s.y(1.48)} textAnchor="middle" className="anno-strong" style={{ fill: 'var(--bg)' }}>
                         h{i + 1}: {pred[i]} {i === map ? '(MAP)' : ''}
                       </text>
                     )}
@@ -67,12 +67,12 @@ export function BayesOptLab() {
               <rect x={s.x(0)} width={s.x(pPlus) - s.x(0)} y={s.y(0.8)} height={s.y(0.15) - s.y(0.8)} fill="var(--c-pos)" opacity={0.8} />
               <rect x={s.x(pPlus)} width={s.x(1) - s.x(pPlus)} y={s.y(0.8)} height={s.y(0.15) - s.y(0.8)} fill="var(--c-neg)" opacity={0.8} />
               {pPlus > 0.06 && (
-                <text x={s.x(pPlus / 2)} y={s.y(0.43)} textAnchor="middle" className="anno-strong" style={{ fill: '#fff' }}>
+                <text x={s.x(pPlus / 2)} y={s.y(0.43)} textAnchor="middle" className="anno-strong" style={{ fill: 'var(--bg)' }}>
                   + : {fmt(pPlus, 2)}
                 </text>
               )}
               {pPlus < 0.94 && (
-                <text x={s.x((1 + pPlus) / 2)} y={s.y(0.43)} textAnchor="middle" className="anno-strong" style={{ fill: '#fff' }}>
+                <text x={s.x((1 + pPlus) / 2)} y={s.y(0.43)} textAnchor="middle" className="anno-strong" style={{ fill: 'var(--bg)' }}>
                   − : {fmt(1 - pPlus, 2)}
                 </text>
               )}

@@ -1,0 +1,256 @@
+/* ============ extra themes ============
+   Each block fills in the tokens from global.css. To add a theme: copy a block, then list it in THEMES (lib/theme.ts).
+   Selectors are not tied to :root, so the swatches in the theme menu show each theme's real colours.
+   Palettes follow their namesakes, with text and accent colours lifted where the originals are too faint to read. */
+
+[data-theme='sepia'] {
+  --bg: #f4ecd8;
+  --surface: #fbf5e6;
+  --surface-2: #efe5cd;
+  --surface-3: #e5d9bc;
+  --ink: #3a2e22;
+  --ink-soft: #4a3c2d;
+  --muted: #6b5a47;
+  --line: #e0d3b6;
+  --grid: #eadfc6;
+  --accent: #8a4b12;
+  --accent-ink: #fff8e8;
+  --accent-soft: #f0dfc0;
+  --focus: #1d5fa8;
+  --c-data: #1f5fa8;
+  --c-fit: #2b6e5a;
+  --c-res: #b8431c;
+  --c-pen: #6b3fa0;
+  --c-var: #8a5a00;
+  --c-bias: #ad2a5a;
+  --c-noise: #6a6658;
+  --c-alt: #86348f;
+  --c-good: #2f6f2f;
+  --c-bad: #b3261e;
+  --c-truth: #3a2e22;
+  --c-pos: #1f5fa8;
+  --c-neg: #b8431c;
+  --k-intuition: #0f6a7a;
+  --k-definition: #4a45a8;
+  --k-warning: #a8430f;
+  --k-note: #5c5648;
+  --k-example: #2f6f2f;
+  --k-key: #7d5a00;
+  --k-theorem: #6b3fa0;
+  --shadow: 0 1px 2px rgba(70, 50, 20, 0.08), 0 4px 14px rgba(70, 50, 20, 0.07);
+  --sm-truth: #1f5fa8;
+  --sm-fit: #2f7a3a;
+  --sm-sel: #b3261e;
+  --sm-kernel: #d9a514;
+}
+
+[data-theme='catppuccin-latte'] {
+  --bg: #eff1f5;
+  --surface: #f8f9fb;
+  --surface-2: #e6e9ef;
+  --surface-3: #dce0e8;
+  --ink: #4c4f69;
+  --ink-soft: #5c5f77;
+  --muted: #5f6278;
+  --line: #ccd0da;
+  --grid: #e3e6ec;
+  --accent: #7a2be0;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8dcfb;
+  --focus: #1e66f5;
+  --c-data: #1e66f5;
+  --c-fit: #147a80;
+  --c-res: #d4520a;
+  --c-pen: #8839ef;
+  --c-var: #a86a0c;
+  --c-bias: #c7359f;
+  --c-noise: #6c6f85;
+  --c-alt: #5a6fe0;
+  --c-good: #2f8a1f;
+  --c-bad: #d20f39;
+  --c-truth: #4c4f69;
+  --c-pos: #1e66f5;
+  --c-neg: #d4520a;
+  --k-intuition: #0a6d7d;
+  --k-definition: #4558d0;
+  --k-warning: #ad3e08;
+  --k-note: #5c5f77;
+  --k-example: #267016;
+  --k-key: #8a5d0a;
+  --k-theorem: #7a2be0;
+  --shadow: 0 1px 2px rgba(76, 79, 105, 0.08), 0 4px 14px rgba(76, 79, 105, 0.07);
+  --sm-truth: #1e66f5;
+  --sm-fit: #40a02b;
+  --sm-sel: #d20f39;
+  --sm-kernel: #df8e1d;
+}
+
+[data-theme='nord'],
+[data-theme='gruvbox'],
+[data-theme='dracula'],
+[data-theme='catppuccin-mocha'] {
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --pic-bg: #ffffff;
+  --pic-invert: invert(1) hue-rotate(180deg);
+  color-scheme: dark;
+}
+
+[data-theme='nord'] {
+  --bg: #2e3440;
+  --surface: #343b49;
+  --surface-2: #3b4252;
+  --surface-3: #434c5e;
+  --ink: #eceff4;
+  --ink-soft: #d8dee9;
+  --muted: #b3bccb;
+  --line: #4c566a;
+  --grid: #414a5b;
+  --accent: #88c0d0;
+  --accent-ink: #2e3440;
+  --accent-soft: #3d5361;
+  --focus: #8fbcbb;
+  --c-data: #8fb8e8;
+  --c-fit: #8fbcbb;
+  --c-res: #e0987f;
+  --c-pen: #c4a3e0;
+  --c-var: #ebcb8b;
+  --c-bias: #ec8fb0;
+  --c-noise: #b3bccb;
+  --c-alt: #d2a8d9;
+  --c-good: #a3be8c;
+  --c-bad: #ef8f97;
+  --c-truth: #eceff4;
+  --c-pos: #8fb8e8;
+  --c-neg: #e0987f;
+  --k-intuition: #88c0d0;
+  --k-definition: #a9bdee;
+  --k-warning: #e8a88f;
+  --k-note: #b3bccb;
+  --k-example: #a3be8c;
+  --k-key: #ebcb8b;
+  --k-theorem: #c4a3e0;
+  --sm-truth: #8fb8e8;
+  --sm-fit: #a3be8c;
+  --sm-sel: #ef8f97;
+  --sm-kernel: #ebcb8b;
+}
+
+[data-theme='gruvbox'] {
+  --bg: #1d2021;
+  --surface: #282828;
+  --surface-2: #32302f;
+  --surface-3: #3c3836;
+  --ink: #ebdbb2;
+  --ink-soft: #d5c4a1;
+  --muted: #b5a68f;
+  --line: #45403d;
+  --grid: #383432;
+  --accent: #fabd2f;
+  --accent-ink: #282828;
+  --accent-soft: #4a3f1f;
+  --focus: #83a598;
+  --c-data: #83a598;
+  --c-fit: #8ec07c;
+  --c-res: #fe8019;
+  --c-pen: #d3869b;
+  --c-var: #fabd2f;
+  --c-bias: #fb7a9c;
+  --c-noise: #b5a68f;
+  --c-alt: #c9a2e0;
+  --c-good: #b8bb26;
+  --c-bad: #fb6a52;
+  --c-truth: #ebdbb2;
+  --c-pos: #83a598;
+  --c-neg: #fe8019;
+  --k-intuition: #8ec07c;
+  --k-definition: #9fbdb0;
+  --k-warning: #fe8019;
+  --k-note: #b5a68f;
+  --k-example: #b8bb26;
+  --k-key: #fabd2f;
+  --k-theorem: #d3869b;
+  --sm-truth: #83a598;
+  --sm-fit: #b8bb26;
+  --sm-sel: #fb6a52;
+  --sm-kernel: #fabd2f;
+}
+
+[data-theme='dracula'] {
+  --bg: #21222c;
+  --surface: #282a36;
+  --surface-2: #2f3241;
+  --surface-3: #44475a;
+  --ink: #f8f8f2;
+  --ink-soft: #e2e2dc;
+  --muted: #a9afcf;
+  --line: #3f4256;
+  --grid: #343746;
+  --accent: #bd93f9;
+  --accent-ink: #21222c;
+  --accent-soft: #3d3560;
+  --focus: #8be9fd;
+  --c-data: #8be9fd;
+  --c-fit: #50fa7b;
+  --c-res: #ffb86c;
+  --c-pen: #bd93f9;
+  --c-var: #f1fa8c;
+  --c-bias: #ff79c6;
+  --c-noise: #a9afcf;
+  --c-alt: #d6acff;
+  --c-good: #50fa7b;
+  --c-bad: #ff6e6e;
+  --c-truth: #f8f8f2;
+  --c-pos: #8be9fd;
+  --c-neg: #ffb86c;
+  --k-intuition: #8be9fd;
+  --k-definition: #bd93f9;
+  --k-warning: #ffb86c;
+  --k-note: #a9afcf;
+  --k-example: #50fa7b;
+  --k-key: #f1fa8c;
+  --k-theorem: #d6acff;
+  --sm-truth: #8be9fd;
+  --sm-fit: #50fa7b;
+  --sm-sel: #ff6e6e;
+  --sm-kernel: #f1fa8c;
+}
+
+[data-theme='catppuccin-mocha'] {
+  --bg: #1e1e2e;
+  --surface: #27273a;
+  --surface-2: #313244;
+  --surface-3: #45475a;
+  --ink: #cdd6f4;
+  --ink-soft: #bac2de;
+  --muted: #a6adc8;
+  --line: #45475a;
+  --grid: #363748;
+  --accent: #cba6f7;
+  --accent-ink: #1e1e2e;
+  --accent-soft: #43385c;
+  --focus: #b4befe;
+  --c-data: #89b4fa;
+  --c-fit: #94e2d5;
+  --c-res: #fab387;
+  --c-pen: #cba6f7;
+  --c-var: #f9e2af;
+  --c-bias: #f5c2e7;
+  --c-noise: #a6adc8;
+  --c-alt: #b4befe;
+  --c-good: #a6e3a1;
+  --c-bad: #f38ba8;
+  --c-truth: #cdd6f4;
+  --c-pos: #89b4fa;
+  --c-neg: #fab387;
+  --k-intuition: #89dceb;
+  --k-definition: #b4befe;
+  --k-warning: #fab387;
+  --k-note: #a6adc8;
+  --k-example: #a6e3a1;
+  --k-key: #f9e2af;
+  --k-theorem: #cba6f7;
+  --sm-truth: #89b4fa;
+  --sm-fit: #a6e3a1;
+  --sm-sel: #f38ba8;
+  --sm-kernel: #f9e2af;
+}

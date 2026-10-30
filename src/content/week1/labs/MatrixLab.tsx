@@ -3,7 +3,7 @@ import { M } from '../../../components/Math';
 import { Plot } from '../../../components/Plot';
 import { Readout, Slider, Toggle } from '../../../components/ui';
 import { fmt, linspace, lstsq, rng } from '../../../lib/num';
-import { cssVar } from '../../../lib/theme';
+import { cssVar, useResolvedTheme } from '../../../lib/theme';
 
 const TRUE = { b0: -95, bh: 0.55, bb: 4.2 };
 
@@ -13,6 +13,7 @@ export function PlaneFit3D() {
   const [noise, setNoise] = useState(4);
   const [showRes, setShowRes] = useState(true);
   const [open, setOpen] = useState(false);
+  const theme = useResolvedTheme();
 
   const { h, b, w, theta } = useMemo(() => {
     const r = rng(seed);
@@ -74,7 +75,7 @@ export function PlaneFit3D() {
       traces.push({ type: 'scatter3d', mode: 'lines', x: xs, y: ys, z: zs, line: { color: resC, width: 4 }, name: 'residuals', hoverinfo: 'skip' } as Plotly.Data);
     }
     return traces;
-  }, [open, h, b, w, theta, showRes]);
+  }, [open, h, b, w, theta, showRes, theme]);
 
   const layout = useMemo<Partial<Plotly.Layout>>(
     () => ({

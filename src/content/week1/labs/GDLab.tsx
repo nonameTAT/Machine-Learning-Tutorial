@@ -4,7 +4,7 @@ import { M } from '../../../components/Math';
 import { Plot } from '../../../components/Plot';
 import { Readout, Segmented, Slider, Toggle } from '../../../components/ui';
 import { eig2, fmt, linspace } from '../../../lib/num';
-import { cssVar } from '../../../lib/theme';
+import { cssVar, useResolvedTheme } from '../../../lib/theme';
 import { EX_X, EX_Y } from './ResidualLab';
 
 type Mode = 'batch' | 'sgd';
@@ -284,6 +284,7 @@ export function GDLab() {
 }
 
 function Bowl3D({ S, path, xd, yd }: { S: ReturnType<typeof setup>; path: P[]; xd: [number, number]; yd: [number, number] }) {
+  const theme = useResolvedTheme();
   const data = useMemo(() => {
     const t0 = linspace(xd[0], xd[1], 40);
     const t1 = linspace(yd[0], yd[1], 40);
@@ -317,7 +318,7 @@ function Bowl3D({ S, path, xd, yd }: { S: ReturnType<typeof setup>; path: P[]; x
         name: 'GD path',
       },
     ] as Plotly.Data[];
-  }, [S, path, xd, yd]);
+  }, [S, path, xd, yd, theme]);
   const layout = useMemo<Partial<Plotly.Layout>>(
     () => ({
       scene: {

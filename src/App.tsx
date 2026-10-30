@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Checklist } from './components/ui';
 import { PageContext, WeeksContext } from './course/context';
 import { DEFAULT_ROUTE, PAGES, WEEKS } from './course/registry';
 import type { Page, Week } from './course/types';
 import { useStored } from './lib/storage';
-import { useThemeController, type ThemePref } from './lib/theme';
+import { THEMES, useThemeController, type ThemeId, type ThemePref } from './lib/theme';
 
 function useHashRoute(): [string, (id: string) => void] {
   const parse = () => {
@@ -63,7 +63,7 @@ export default function App() {
         </a>
         <div className="topbar-right">
           <WeekSwitch current={week.n} />
-          <ThemeSwitch pref={theme.pref} setPref={theme.setPref} />
+          <ThemeMenu pref={theme.pref} resolved={theme.resolved} setPref={theme.setPref} />
         </div>
       </header>
 
@@ -87,19 +87,71 @@ export default function App() {
   );
 }
 
-function ThemeSwitch({ pref, setPref }: { pref: ThemePref; setPref: (p: ThemePref) => void }) {
-  const opts: { v: ThemePref; label: string; icon: string }[] = [
-    { v: 'light', label: 'Light', icon: '☀' },
-    { v: 'system', label: 'System', icon: '◐' },
-    { v: 'dark', label: 'Dark', icon: '☾' },
-  ];
+function ThemeSwatch({ id }: { id: ThemeId }) {
   return (
-    <div className="theme-switch" role="radiogroup" aria-label="Colour theme">
-      {opts.map((o) => (
-        <button key={o.v} role="radio" aria-checked={pref === o.v} className={pref === o.v ? 'on' : ''} onClick={() => setPref(o.v)} title={o.label}>
-          {o.icon}
-        </button>
-      ))}
+    <span className="theme-swatch" data-theme={id} aria-hidden>
+      <i />
+      <i />
+    </span>
+  );
+}
+
+function ThemeMenu({ pref, resolved, setPref }: { pref: ThemePref; resolved: ThemeId; setPref: (p: ThemePref) => void }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const opts: { id: ThemePref; label: string }[] = [{ id: 'system', label: 'System' }, ...THEMES];
+  const label = `Colour theme: ${opts.find((o) => o.id === pref)?.label}`;
+
+  useEffect(() => {
+    if (!open) return;
+    wrap.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+    const onPointer = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    return () => document.removeEventListener('pointerdown', onPointer);
+  }, [open]);
+
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>('button')];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+    } else if (e.key === 'Tab') {
+      setOpen(false);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      toggle.current?.focus();
+    }
+  };
+
+  return (
+    <div className="theme-menu" ref={wrap}>
+      <button ref={toggle} className="theme-toggle" aria-haspopup="menu" aria-expanded={open} aria-label={label} title={label} onClick={() => setOpen((o) => !o)}>
+        <ThemeSwatch id={resolved} />
+      </button>
+      {open && (
+        <div className="theme-list" role="menu" aria-label="Colour theme" onKeyDown={onKey}>
+          {opts.map((o) => (
+            <button
+              key={o.id}
+              role="menuitemradio"
+              aria-checked={pref === o.id}
+              className={pref === o.id ? 'on' : ''}
+              onClick={() => {
+                setPref(o.id);
+                setOpen(false);
+                toggle.current?.focus();
+              }}
+            >
+              {o.id === 'system' ? <span className="theme-swatch">◐</span> : <ThemeSwatch id={o.id} />}
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

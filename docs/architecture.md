@@ -21,7 +21,9 @@ src/
   lib/frac.ts             exact fractions for the Naive Bayes counting labs
   lib/tree.ts             entropy, gain, gain ratio; greedy classification trees with reduced-error pruning; regression trees
   lib/storage.ts          localStorage-backed state hook; lib/migrate.ts upgrades older saved progress
+  lib/theme.ts            the THEMES list, the stored theme choice, and redrawing Plotly when it changes
   styles/global.css       design tokens (light/dark) and all styles
+  styles/themes.css       the other themes: one block of tokens each; add a block here and list it in THEMES
 ```
 
 Stack: React 19, TypeScript, Vite 8, KaTeX, Plotly (lazy-loaded), plain CSS.
