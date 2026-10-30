@@ -1,6 +1,7 @@
 import { M, MB } from '../../../components/Math';
 import { Callout, Lab, Quiz, Sec, Steps, Table, TryThis } from '../../../components/ui';
 import { GDLab } from '../labs/GDLab';
+import { SGDLossLab } from '../labs/SGDLossLab';
 
 export default function GD() {
   return (
@@ -172,6 +173,54 @@ export default function GD() {
           If the loss is <M t="\SSE" /> instead of <M t="\MSE" />, the gradient is <M t="m" /> times larger, so the same numerical <M t="\alpha" /> takes{' '}
           <M t="m" />-times bigger steps. Some texts use <M t="\tfrac{1}{2m}\SSE" /> to remove the 2. Always differentiate the loss actually written down.
         </Callout>
+      </Sec>
+
+      <Sec title="SGD up close: one loss curve per example">
+        <p>
+          The MSE is an average of per-example losses, and differentiation is linear, so the full gradient is the average of the per-example gradients:
+        </p>
+        <MB t="J(\theta) = \frac1m\sum_{j=1}^m \ell_j(\theta), \quad \ell_j(\theta) = \big(y_j - h_\theta(\bx_j)\big)^2 \qquad\Longrightarrow\qquad \nabla J(\theta) = \frac1m\sum_{j=1}^m \nabla\ell_j(\theta)." />
+        <p>
+          Batch GD follows <M t="\nabla J" />. An SGD step follows a single <M t="\nabla\ell_j" />. If <M t="j" /> is drawn uniformly at random,{' '}
+          <M t="\mathbb{E}_j[\nabla\ell_j(\theta)] = \nabla J(\theta)" />, so the SGD direction is right <em>on average</em> (an unbiased estimate).
+          Any single step can still point well away from it.
+        </p>
+        <p>
+          To draw this, the lab below keeps one parameter. It uses the running example with <M t="x" /> centred, holds the intercept at its optimum (8), and
+          learns only the slope <M t="\theta" />. Each example is then a parabola <M t="\ell_j(\theta) = (r_j - \theta c_j)^2" /> with{' '}
+          <M t="c_j = x_j - 7" /> and <M t="r_j = y_j - 8" />, and its gradient <M t="g_j(\theta) = -2(r_j - \theta c_j)c_j" /> is a straight line.
+        </p>
+        <Lab
+          title="Per-example losses, their mean, and their gradients"
+          purpose="Left: each coloured parabola is one example’s loss; the thick curve is their mean J. Right: the matching gradients (slopes), with the thick line their mean ∇J. SGD steps along the highlighted example only."
+        >
+          <SGDLossLab />
+        </Lab>
+        <TryThis
+          items={[
+            <>
+              Look at θ = 1 (the start). Every example’s loss has its own minimiser. Example 4’s sits at θ = −6, and example 3 (with <M t="c_3 = 0" />) is
+              flat: it carries no information about the slope, so its gradient is always 0.
+            </>,
+            <>
+              Check in the table that the mean of the five <M t="g_j" /> equals <M t="\nabla J" />. The tangent on the thick curve is the average of the
+              five coloured tangents.
+            </>,
+            <>
+              Click near θ̂ = −1. The diamond sits on 0, but the dots are 8, −2, 0, 10, −16. An SGD step from the exact minimum still moves θ, which is why
+              fixed-α SGD never settles.
+            </>,
+            <>
+              Press Run SGD with α = 0.02. θ approaches θ̂ fast, then keeps hopping around it. Lower α to 0.003: the hops shrink, but so does early
+              progress. This is why practical SGD decays α over time.
+            </>,
+            <>
+              Set α ≈ 0.08 and run. Batch steps are still stable (limit 0.147), but examples 1 and 5 have curvature <M t="2c_j^2 = 32" />, so a single step
+              on them overshoots their own bowl and SGD diverges.
+            </>,
+            <>Switch to “Reshuffle each epoch”. The jitter around θ̂ now changes from epoch to epoch instead of repeating the same cycle.</>,
+          ]}
+        />
       </Sec>
 
       <Sec title="Check your understanding">
