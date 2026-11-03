@@ -1,0 +1,163 @@
+import { CoefPathLab, PenaltyGeometryLab, RegularisationLab } from '../labs/RegLab';
+
+## The problem: a better fit can be a worse model
+
+Lesson 9 ended with a high-degree polynomial threading every training point and swinging wildly between them. Look at its coefficients and you find the mechanism: huge positive and negative weights that nearly cancel. Such a model is *extremely sensitive* — a small change in one data point produces a very different curve.
+
+**Regularisation** is a general method to avoid overfitting by adding constraints to the weight vector. The common approach — **shrinkage** — insists the weights be small on average. We trade a little training fit for a lot less sensitivity. Note what it does *not* do: it adds no data. It changes the objective.
+
+## Ridge regression: pay for large coefficients
+
+Add a penalty to the least-squares cost:
+
+$$
+\begin{gathered} J_\lambda(\theta) = \underbrace{\sum_{j=1}^m (y_j - h_\theta(\bx_j))^2}_{\text{fit the data}} + \underbrace{\lambda\sum_{i=1}^n \theta_i^2}_{\text{keep weights small}}, \\[4pt] \theta^* = \argmin_\theta\,(\by - X\theta)\T(\by - X\theta) + \lambda\|\theta\|^2. \end{gathered}
+$$
+
+$\lambda \ge 0$ sets the exchange rate between fit and size. $\lambda = 0$ is ordinary least squares; $\lambda \to \infty$ drives the penalised coefficients to zero. Note the penalty sum starts at $i = 1$: the intercept is usually *not* penalised (shrinking it would just bias every prediction toward 0). Some texts write $\|\theta\|^2$ over all entries; both conventions appear, so always check which one a question uses.
+
+<Steps>
+The penalty is another quadratic, so the closed form survives. Let $D = \diag(0, 1, \dots, 1)$ so that $\theta\T D\theta = \sum_{i\ge1}\theta_i^2$.
+
+<Step title="Write the objective in matrix form">
+$$
+J_\lambda(\theta) = (\by - X\theta)\T(\by - X\theta) + \lambda\,\theta\T D\theta.
+$$
+</Step>
+
+<Step title="Differentiate (D is symmetric)">
+$$
+\nabla J_\lambda = -2X\T(\by - X\theta) + 2\lambda D\theta.
+$$
+</Step>
+
+<Step title="Set to zero and collect θ">
+$$
+(X\T X + \lambda D)\,\hat\theta = X\T\by.
+$$
+</Step>
+
+<Step title="Solve">
+$$
+\boxed{\;\hat\theta_{\text{ridge}} = (X\T X + \lambda D)^{-1}X\T\by\;}
+$$
+
+Penalising all entries replaces $D$ with $I$: $\hat\theta = (X\T X + \lambda I)^{-1}X\T\by$.
+
+For $\lambda > 0$ this matrix is invertible even when $X\T X$ is not (duplicate columns, more features than rows): the penalty makes the bowl strictly convex in every penalised direction. Adding $\lambda$ to the diagonal is a classic trick for numerical stability.
+</Step>
+</Steps>
+
+## See shrinkage in one dimension
+
+With one feature and an unpenalised intercept, the ridge solution is
+
+$$
+\hat\theta_1 = \frac{S_{xy}}{S_{xx} + \lambda}, \qquad \hat\theta_0 = \bar y - \hat\theta_1\bar x.
+$$
+
+The penalty simply inflates the denominator, pulling the slope toward 0. For the running example ($S_{xy} = -34, S_{xx} = 34$) with $\lambda = 34$: slope $-34/68 = -0.5$, intercept $8 - (-0.5)(7) = 11.5$.
+
+|  | OLS (λ = 0) | Ridge (λ = 34) |
+| --- | --- | --- |
+| Fitted line | $15 - x$ | $11.5 - 0.5x$ |
+| Training SSE | 40 | 48.5 |
+| Penalised objective SSE + 34θ₁² | 40 + 34 = 74 | 48.5 + 8.5 = 57 |
+
+Training SSE got *worse* — and that is exactly what the new objective asked for: it is willing to fit worse in exchange for a smaller slope. Whether this improves prediction on new data is a separate empirical question (lesson 11).
+
+<Callout kind="note" title="SSE vs MSE convention changes λ’s meaning">
+If the objective is $\MSE + \lambda\sum_{i\ge1}\theta_i^2$ instead, multiply through by $m$ and you get $(X\T X + m\lambda D)\hat\theta = X\T\by$. The same numerical λ is $m$ times stronger. (Above, λ = 34 under SSE equals λ = 6.8 under MSE with m = 5.)
+</Callout>
+
+## Explore: taming a degree-9 polynomial
+
+<Lab title="Regularisation strength" purpose="Same model family every time (degree 9). Only λ changes. Watch the curve, the coefficients, and the training and validation errors.">
+<RegularisationLab />
+</Lab>
+
+<TryThis>
+1. Start at λ = 0. The coefficients are enormous (note the log scale) and validation error is high. This is the overfit model.
+2. Slowly increase λ. Training MSE rises monotonically; validation MSE first falls, then rises. Find the λ with the lowest validation error.
+3. Push λ to 100. Everything shrinks towards a flat line at ȳ — the model now underfits.
+4. Switch to LASSO at a moderate λ (around 10⁻² to 10⁻¹). Count the exact zeros. Ridge essentially never produces them.
+</TryThis>
+
+## LASSO: absolute values buy sparsity
+
+LASSO (“Least Absolute Shrinkage and Selection Operator”) replaces the squared penalty with absolute values:
+
+$$
+J_\lambda(\theta) = \|\by - X\theta\|^2 + \lambda\sum_{i=1}^n |\theta_i|.
+$$
+
+This small change has a big effect: some weights are shrunk, but others are set *exactly* to zero, so LASSO favours **sparse** solutions and performs feature selection as part of fitting.
+
+<Table
+          head={['', 'Ridge (L2)', 'LASSO (L1)']}
+          rows={[
+            ['Penalty', <M t="\lambda\sum_i\theta_i^2" />, <M t="\lambda\sum_i|\theta_i|" />],
+            ['Effect on weights', 'smooth shrinkage; weights rarely exactly 0', 'shrinkage plus exact zeros'],
+            ['Closed form', <M t="(X\T X + \lambda D)^{-1}X\T\by" />, 'none in general (|θ| is not differentiable at 0); solved iteratively'],
+            ['Use when', 'many small effects; correlated features; stability', 'you expect few relevant features; want interpretability'],
+          ]}
+        />
+
+## Why the L1 penalty produces exact zeros
+
+A penalised problem has an equivalent constrained form: minimise SSE subject to $\sum\theta_i^2 \le t^2$ (ridge) or $\sum|\theta_i| \le t$ (LASSO). In two coordinates the ridge region is a disk; the LASSO region is a diamond with corners on the axes. The SSE contours are ellipses centred on the OLS solution $\hat\theta$. Grow the ellipses until they first touch the region: that contact point is the constrained solution.
+
+<Lab title="Constraint geometry" purpose="Drag θ̂ (the OLS solution) in either panel. The orange ellipse is the first contour that touches each region.">
+<PenaltyGeometryLab />
+</Lab>
+
+<TryThis>
+1. Drag θ̂ around outside the regions. For the diamond, a whole range of positions makes contact at a corner — so a coordinate is exactly 0. For the disk, contact is almost always at a point with both coordinates non-zero.
+2. Shrink t: more positions land on a corner (sparser LASSO solutions).
+3. Change ρ to tilt the ellipses. Corners still attract contact, but which coefficient is zeroed can change.
+</TryThis>
+
+<Callout kind="note">
+This explains a *tendency*: ridge can give a zero (if $\hat\theta$ lies on an axis), and LASSO need not (if the ellipse meets an edge). Also, the constraint size $t$ and the penalty $\lambda$ are related but not the same number.
+</Callout>
+
+<Lab title="Coefficient paths" purpose="Six standardised features, three of them truly irrelevant (true θ = 0). Follow every coefficient as λ grows.">
+<CoefPathLab />
+</Lab>
+
+## Practical points
+
+- **Feature scale matters.** Changing a feature from metres to centimetres divides its coefficient by 100, so the same penalty treats it very differently. Standardise features before penalising — computing the means and scales on training data only.
+- **λ is a hyperparameter.** Training error always prefers $\lambda = 0$, so choose λ with validation data or grid search (lesson 11).
+- **Large-λ limit.** With an unpenalised intercept, every slope → 0 and the model predicts the training mean $\bar y$ everywhere.
+- **Model selection by shrinkage**: one model whose unimportant variables get near-zero (ridge) or exactly zero (LASSO) coefficients — an alternative to searching over subsets.
+
+## Check your understanding
+
+<Quiz id="q1">
+With an unpenalised intercept, what does ridge regression predict as λ → ∞?
+
+<Option>Zero everywhere. <Why>That would require penalising the intercept too.</Why></Option>
+<Option correct>The training mean ȳ everywhere. <Why>All slopes are driven to 0; the free intercept then minimises SSE at ȳ.</Why></Option>
+<Option>The OLS fit. <Why>That is the λ = 0 end.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Why does ridge give a unique solution even when two columns of X are identical?
+
+<Option correct>Because XᵀX + λD is invertible for λ > 0 (with the intercept column unpenalised and present). <Why>vᵀ(XᵀX + λD)v = ‖Xv‖² + λΣᵢ≥₁vᵢ² is positive for any non-zero v once slopes are penalised and the ones column handles v₀.</Why></Option>
+<Option>Because ridge removes one of the duplicate columns. <Why>Ridge keeps both; it splits the weight between them equally.</Why></Option>
+<Option>It doesn’t; ridge also fails. <Why>Fixing exactly this is one of ridge’s main uses.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+You want a model that uses only a handful of 200 candidate features. Which penalty is the natural first choice?
+
+<Option>L2 (ridge) <Why>Ridge shrinks but rarely zeroes coefficients, so it keeps all 200 features.</Why></Option>
+<Option correct>L1 (LASSO) <Why>L1’s corners produce exact zeros, selecting a sparse subset.</Why></Option>
+<Option>No penalty <Why>Plain least squares uses all features (and may not even be unique if 200 > m).</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Regularisation changes the objective to prefer small weights: ridge adds $\lambda\sum\theta_i^2$ and keeps a closed form $(X\T X + \lambda D)^{-1}X\T\by$; LASSO adds $\lambda\sum|\theta_i|$ and yields exact zeros because its constraint region has corners. Training error always gets worse as λ grows; the point is better behaviour on new data, so λ must be chosen on held-out data with standardised features.
+</Callout>

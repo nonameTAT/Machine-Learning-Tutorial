@@ -1,0 +1,167 @@
+import { CenteringLab, OLSCalculator } from '../labs/OLSCalc';
+
+## Strategy: first place the line, then tilt it
+
+With one feature we want $\hat y = \theta_0 + \theta_1 x$ minimising
+
+$$
+J(\theta_0,\theta_1) = \frac1m\sum_{j=1}^m \big(y_j - \theta_0 - \theta_1 x_j\big)^2.
+$$
+
+$J$ is a smooth bowl in two unknowns, so at the bottom both partial derivatives are zero. Before calculating, think about what each derivative will say. If the residuals are positive on average, the whole line is too low — raising the intercept helps. So the $\theta_0$ equation should be about the *average* residual. The $\theta_1$ equation should be about whether residuals are systematically positive at large $x$ and negative at small $x$ — a sign the line needs tilting.
+
+## The derivation, one step at a time
+
+<Steps>
+The chain rule gives $\frac{\partial}{\partial\theta}(\text{residual})^2 = 2\cdot\text{residual}\cdot\frac{\partial\,\text{residual}}{\partial\theta}$. The residual $y_j - \theta_0 - \theta_1x_j$ has derivative $-1$ with respect to $\theta_0$ and $-x_j$ with respect to $\theta_1$.
+
+<Step title="Differentiate with respect to the intercept and set to zero">
+$$
+\frac{\partial J}{\partial\theta_0} = -\frac2m\sum_j\big(y_j - \theta_0 - \theta_1x_j\big) = 0 \;\Longleftrightarrow\; \sum_j e_j = 0.
+$$
+</Step>
+
+<Step title="Divide by m: the intercept puts the line through the centroid">
+$$
+\bar y - \theta_0 - \theta_1\bar x = 0 \quad\Longrightarrow\quad \hat\theta_0 = \bar y - \hat\theta_1\bar x.
+$$
+
+The fitted line passes through $(\bar x, \bar y)$. Not solved yet — $\theta_0$ still depends on the unknown slope.
+</Step>
+
+<Step title="Differentiate with respect to the slope and set to zero">
+$$
+\frac{\partial J}{\partial\theta_1} = -\frac2m\sum_j x_j\big(y_j - \theta_0 - \theta_1x_j\big) = 0 \;\Longleftrightarrow\; \sum_j x_j e_j = 0.
+$$
+</Step>
+
+<Step title="Substitute the intercept; each residual becomes a deviation">
+$$
+y_j - (\bar y - \theta_1\bar x) - \theta_1 x_j = (y_j - \bar y) - \theta_1(x_j - \bar x)
+$$
+
+$$
+\Longrightarrow\quad \sum_j x_j\big[(y_j-\bar y) - \theta_1(x_j-\bar x)\big] = 0.
+$$
+</Step>
+
+<Step title="Replace xⱼ by (xⱼ − x̄) — allowed because deviations sum to zero">
+Since $\sum_j (y_j-\bar y) = 0$ and $\sum_j(x_j - \bar x) = 0$, subtracting $\bar x$ times either sum changes nothing:
+
+$$
+\sum_j (x_j-\bar x)(y_j-\bar y) = \theta_1\sum_j (x_j-\bar x)^2.
+$$
+</Step>
+
+<Step title="Solve">
+Write $S_{xx} = \sum_j (x_j-\bar x)^2$ and $S_{xy} = \sum_j (x_j-\bar x)(y_j-\bar y)$. If $S_{xx} > 0$:
+
+$$
+\boxed{\;\hat\theta_1 = \frac{S_{xy}}{S_{xx}}, \qquad \hat\theta_0 = \bar y - \hat\theta_1\bar x\;}
+$$
+</Step>
+</Steps>
+
+<Callout kind="note" title="Is this really the minimum?">
+A zero derivative could be a maximum or saddle. Here it is not: $J$ is a sum of squares of functions that are linear in the parameters, so it is a convex quadratic (an upward bowl). Every stationary point of a convex function is a global minimum, and $S_{xx} > 0$ makes it unique. Lesson 5 proves this in general with the Hessian.
+</Callout>
+
+<Callout kind="warning" title="When the formula breaks">
+If every $x_j$ is the same, $S_{xx} = 0$ and the slope is undefined. Geometrically: with all points stacked at one $x$, every line through $(\bar x, \bar y)$ fits equally well. You cannot learn how $y$ changes with $x$ if $x$ never changes. This is the one-feature version of a rank-deficient design matrix.
+</Callout>
+
+## Connect the algebra to the statistics
+
+Divide top and bottom by m − 1 and the slope becomes a ratio of familiar statistics:
+
+$$
+\hat\theta_1 = \frac{\Cov(x,y)}{\Var(x)} = r\,\frac{s_y}{s_x}, \qquad \hat\theta_0 = \bar y - \hat\theta_1\bar x.
+$$
+
+Read it as: “how much x and y move together, per unit of x’s own spread”. The slope has the sign of the correlation, but its size carries units (units of y per unit of x) while r is dimensionless. A height–weight example is exactly this: choose $\theta_0, \theta_1$ in $\hat w = \theta_0 + \theta_1 h$ to minimise $\sum_j (w_j - (\theta_0 + \theta_1 h_j))^2$.
+
+## Worked example — and a calculator to check your own
+
+Take $x = (3, 6, 7, 8, 11)$ and $y = (13, 8, 11, 2, 6)$. The strategy is: means first, then deviations, then the two sums. Working with deviations keeps the numbers small and makes the role of covariance visible.
+
+<Table
+          className="num"
+          head={['x', 'y', 'x − 7', 'y − 8', '(x − 7)²', '(x − 7)(y − 8)']}
+          rows={[
+            [3, 13, -4, 5, 16, -20],
+            [6, 8, -1, 0, 1, 0],
+            [7, 11, 0, 3, 0, 0],
+            [8, 2, 1, -6, 1, -6],
+            [11, 6, 4, -2, 16, -8],
+            [<strong>x̄ = 7</strong>, <strong>ȳ = 8</strong>, '', '', <strong>S_xx = 34</strong>, <strong>S_xy = −34</strong>],
+          ]}
+        />
+
+$$
+\hat\theta_1 = \frac{-34}{34} = -1, \qquad \hat\theta_0 = 8 - (-1)(7) = 15, \qquad \hat y = 15 - x.
+$$
+
+**Verify with a different route.** Fitted values $(12, 9, 8, 7, 4)$, residuals $(1, -1, 3, -5, 2)$. Both normal equations hold: $\sum e_j = 0$ and $\sum x_j e_j = 3 - 6 + 21 - 40 + 22 = 0$. SSE = 40, MSE = 8. A short independent check like this catches sign errors that re-doing the same arithmetic would miss.
+
+<Lab title="OLS calculator" purpose="Type any small dataset to get the full deviation table, coefficients (with exact fractions when they exist) and the normal-equation checks. Use it to mark your hand calculations.">
+<OLSCalculator />
+</Lab>
+
+## Intuitions: translating the data
+
+- Adding a constant to every $x$ changes only the intercept, because the slope is built from deviations $x_j - \bar x$, which a translation leaves unchanged. Concretely, with $x' = x + a$: $\theta_0 + \theta_1x = (\theta_0 - \theta_1a) + \theta_1x'$.
+- Centring $x$ (subtract $\bar x$) makes the intercept equal to $\bar y$: the prediction at the average input is the average output.
+- Centring $y$ as well gives a zero intercept, without changing the problem in any essential way — predictions on the original scale are recovered by adding the means back.
+
+<Lab title="Shift the inputs" purpose="Slide the data horizontally. Only the intercept moves.">
+<CenteringLab />
+</Lab>
+
+<Callout kind="warning">
+Subtracting $\bar y$ from $y$ *alone* does not generally give a zero intercept: the intercept becomes $-\hat\theta_1\bar x$, which is zero only if $x$ is also centred (or the slope is 0). The common claim that centring removes the intercept assumes $x$ has been centred too.
+</Callout>
+
+## The residual identities
+
+The two normal equations are worth remembering as facts about the fitted residuals:
+
+$$
+\sum_{j=1}^m e_j = 0 \qquad\text{and}\qquad \sum_{j=1}^m x_j e_j = 0.
+$$
+
+The first comes from the free intercept; the second from the slope. They hold for the *training* residuals of a least-squares fit with an intercept. They need not hold on new data, nor for a line forced through the origin (which has no intercept equation).
+
+<TryThis>
+1. In the calculator, load “Practice B1 data” (0,1),(1,2),(2,2). Predict the slope and intercept by hand first, then check.
+2. Make all x values equal (e.g. 5, 5, 5). Read the message and explain it in terms of S_xx.
+3. Add 100 to every x. Which numbers in the table change? Which do not?
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+Which normal equation tells you the least-squares line passes through (x̄, ȳ)?
+
+<Option correct>The intercept equation Σⱼ eⱼ = 0. <Why>Dividing Σ(yⱼ − θ₀ − θ₁xⱼ) = 0 by m gives ȳ = θ₀ + θ₁x̄.</Why></Option>
+<Option>The slope equation Σⱼ xⱼeⱼ = 0. <Why>That one fixes the tilt; on its own it does not give the centroid.</Why></Option>
+<Option>Neither; it follows from convexity. <Why>Convexity tells you the stationary point is a minimum, not where the line passes.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+For data with x̄ = 2, ȳ = 5, S_xx = 8, S_xy = −4, the least-squares line is…
+
+<Option correct>ŷ = 6 − 0.5x <Why>θ̂₁ = −4/8 = −0.5 and θ̂₀ = 5 − (−0.5)(2) = 6.</Why></Option>
+<Option>ŷ = 4 − 0.5x <Why>Check the sign: θ̂₀ = ȳ − θ̂₁x̄ = 5 + 1 = 6.</Why></Option>
+<Option>ŷ = 5 − 2x <Why>The slope is S_xy/S_xx, not S_xx/S_xy.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+You fit a line through the origin (no intercept). Must the residuals still sum to zero?
+
+<Option>Yes, always. <Why>The identity Σe = 0 is the intercept’s normal equation; without an intercept there is no such equation.</Why></Option>
+<Option correct>No — only Σ xⱼeⱼ = 0 is guaranteed. <Why>With only θ₁, the single normal equation is Σ xⱼ(yⱼ − θ₁xⱼ) = 0.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Set both partial derivatives to zero. The intercept equation balances residuals and puts the line through the centroid; the slope equation balances input-weighted residuals and gives $\hat\theta_1 = S_{xy}/S_{xx} = \Cov(x,y)/\Var(x)$. Convexity makes it a global minimum; $S_{xx} > 0$ makes it unique. Always verify with the two residual identities.
+</Callout>

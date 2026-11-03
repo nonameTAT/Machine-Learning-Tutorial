@@ -1,0 +1,109 @@
+import { RiskLab } from '../labs/RiskLab';
+
+## Probabilities describe uncertainty; losses describe consequences
+
+So far: decide $h_1$ if $P(h_1 \mid D) > P(h_2 \mid D)$. But a posterior does not by itself say which *action* is best. What if misclassifying a patient who has cancer as “not cancer” costs ten times as much as the reverse mistake?
+
+Let $L(a, c)$ be the loss of taking action $a$ when the truth is $c$. The **conditional risk** — the posterior expected loss — of an action is
+
+$$
+R(a \mid x) = \sum_c L(a, c)\,P(c \mid x), \qquad a^*(x) = \argmin_a R(a \mid x).
+$$
+
+The optimal Bayesian decision minimises expected loss. When every mistake costs the same, this reduces to MAP (proved below).
+
+## Worked example: the positive test again
+
+| action ↓ / truth → | cancer | not cancer |
+| --- | --- | --- |
+| predict cancer | 0 | 1 |
+| predict not cancer | 10 | 0 |
+
+Rows are actions, columns the unknown truth. For each row, weight each entry by the posterior of its column (from lesson 4, 0.2085 and 0.7915) and sum:
+
+$$
+R(\text{cancer} \mid +) = 0 \times 0.2085 + 1 \times 0.7915 = 0.7915, \qquad R(\text{not cancer} \mid +) = 10 \times 0.2085 + 0 = 2.085.
+$$
+
+The minimum-risk action is now **predict cancer**, although its posterior is the smaller one. The posterior did not change; the objective did.
+
+<Callout kind="note" title="A shortcut">
+You can compare $0.02976$ with $0.0784$ — the risks computed with *unnormalised* scores. That is valid because both actions share the same evidence denominator; the true expected losses are 0.7915 and 2.085.
+</Callout>
+
+## Derive the threshold instead of memorising it
+
+<Steps>
+Two classes, $p = P(c_1 \mid x)$, zero loss for correct predictions, cost $C_{\text{FP}}$ for predicting $c_1$ wrongly and $C_{\text{FN}}$ for missing $c_1$.
+
+<Step title="Risk of each action">
+$$
+R(c_1 \mid x) = C_{\text{FP}}(1 - p), \qquad R(c_2 \mid x) = C_{\text{FN}}\,p.
+$$
+</Step>
+
+<Step title="Choose c₁ when its risk is smaller">
+$$
+C_{\text{FP}}(1 - p) < C_{\text{FN}}\,p \iff \boxed{\;p > \frac{C_{\text{FP}}}{C_{\text{FP}} + C_{\text{FN}}}\;}
+$$
+</Step>
+
+<Step title="Apply it">
+Here the threshold is $1/(1 + 10) \approx 0.0909$, so a posterior of 0.2085 is enough to act. At equality both actions have the same risk. With equal costs the threshold is ½: MAP.
+</Step>
+</Steps>
+
+<Steps>
+More generally, with any number of classes, zero-one loss gives MAP.
+
+<Step title="Zero-one loss">
+$$
+L(a, c) = \begin{cases} 0 & a = c \\ 1 & a \ne c \end{cases} \;\Rightarrow\; R(a \mid x) = \sum_{c \ne a} P(c \mid x) = 1 - P(a \mid x).
+$$
+</Step>
+
+<Step title="Minimise">
+Minimising $1 - P(a \mid x)$ is maximising $P(a \mid x)$: the MAP rule is the special case of equal costs.
+</Step>
+</Steps>
+
+<Lab title="Two actions, two risk lines" purpose="Each line is the expected loss of one action as the posterior varies. The cheaper action is the lower line; they cross at the threshold.">
+<RiskLab />
+</Lab>
+
+<TryThis>
+1. Default: the posterior 0.2085 lies right of the threshold 1/11, inside the “predict present” region, though MAP says absent.
+2. Set both costs equal: the lines cross at ½ and minimum risk agrees with MAP everywhere.
+3. Make false positives expensive (C_FP = 10, C_FN = 1). Now the posterior must exceed 10/11 before you act.
+</TryThis>
+
+In summary, the Bayesian framework lets losses enter the decision rule: minimise the posterior expected loss. Week 2’s choice of an ROC operating threshold is the same idea in practice.
+
+## Check your understanding
+
+<Quiz id="q1">
+P(A | x) = 2/5. Predicting A when B is true costs 1; predicting B when A is true costs 3. Which action minimises risk?
+
+<Option correct>Predict A: R(A) = 3/5 \< R(B) = 6/5 <Why>R(A) = 1 × P(B|x) = 3/5; R(B) = 3 × P(A|x) = 6/5. Threshold 1/(1 + 3) = 1/4 \< 2/5.</Why></Option>
+<Option>Predict B, because P(B | x) > ½ <Why>That is the MAP rule; it ignores the unequal costs.</Why></Option>
+<Option>Predict B: R(B) = 3/5 <Why>R(B) weights the cost 3 by P(A | x) = 2/5.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+With C_FP = 1 and C_FN = 3, above what posterior should you predict the positive class?
+
+<Option correct>0.25 <Why>C_FP/(C_FP + C_FN) = 1/4.</Why></Option>
+<Option>0.75 <Why>That would be the threshold if false positives were the costly mistake.</Why></Option>
+<Option>0.5 <Why>Only for equal costs.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Changing the loss table changes…
+
+<Option>the posterior probabilities. <Why>Posteriors depend on the data, priors and likelihoods, not on costs.</Why></Option>
+<Option correct>which action is optimal, but not the posterior. <Why>Uncertainty and consequences are separate ingredients.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A decision needs both a posterior and a loss. Minimise the conditional risk $R(a \mid x) = \sum_c L(a, c)P(c \mid x)$. For two classes, act on $c_1$ when $p > C_{\text{FP}}/(C_{\text{FP}} + C_{\text{FN}})$; with zero-one loss this is the MAP rule.
+</Callout>

@@ -1,0 +1,117 @@
+import { DesignMatrixDemo, HouseLab, Pipeline } from '../labs/HouseLab';
+
+## Start with a prediction you actually want
+
+Suppose you want to estimate what a house will sell for *before* it is sold. You have records of past sales: each house is described by its size, number of bedrooms and bathrooms, and age, and — crucially — you know the price it actually sold for. Those known prices are what make learning possible: any proposed prediction rule can be checked against them.
+
+This is the shape of **supervised learning**: every training input comes with the answer (the *label* or *target*) we want to predict. When the target is a number, the task is **regression**; when it is a category (spam / not spam), it is **classification**.
+
+|  | Supervised | Unsupervised |
+| --- | --- | --- |
+| Training data | inputs and their targets | inputs only |
+| Typical question | “predict y for this new x” | “what structure is in these x’s?” |
+| Examples | house prices (regression), spam filtering (classification) | clustering customers, dimensionality reduction |
+| How we judge it | compare predictions with known targets via a loss | harder — there is no answer key |
+
+Why does supervised learning dominate applications? The answer is about *measurability*: with targets available it is easy to define an error measure — a **loss function** — and use it to compare algorithms, parameter settings and data transformations. Without targets, even deciding what “good” means is a research problem. The catch is that high-quality labels are expensive, which motivates semi-supervised, self-supervised and transfer learning.
+
+<Callout kind="warning">
+Coding a category as 0/1 does not turn classification into regression. “Spam = 1, not spam = 0” still has no meaningful in-between value, and the right loss and model are different. Regression is about targets where differences and averages make sense.
+</Callout>
+
+## Where the model sits in the pipeline
+
+The learning algorithm is only one stage. Before it, someone decided which data to retrieve, cleaned it, and chose a *representation* — the features. After it, the model is evaluated, tuned and eventually deployed and monitored. The arrows loop: poor evaluation sends you back to earlier stages.
+
+<Pipeline />
+
+<Callout kind="intuition">
+Optimisation can only choose among the functions your representation allows. If the price really depends on location and you never provide a location feature, no amount of clever fitting will recover it. Feature preparation decides *what can be learned*; the algorithm decides *which* of those options is chosen.
+</Callout>
+
+## A model is a family of candidate rules
+
+Fit a linear regression equation to ten houses:
+
+$$
+\widehat{\text{Price}} = -8775.58 + 147.12\,\text{Size} + 9660.37\,\text{Beds} + 25691.99\,\text{Baths} - 1285.01\,\text{Age}
+$$
+
+Read it as a recipe: start from a base amount (the **intercept**), then add a fixed amount per unit of each feature. Each coefficient is the change in the *prediction* for a one-unit increase in that feature *with the other features held fixed*. So the model says: one extra square foot adds about \$147; one extra year of age subtracts about \$1,285.
+
+<Lab title="Build a prediction term by term" purpose="Move the sliders and watch each term's contribution. Click a training house to compare the fitted value with what it actually sold for.">
+<HouseLab />
+</Lab>
+
+<TryThis>
+1. Set size to 600 and bedrooms/bathrooms to 0. The prediction can go negative. What does that tell you about using the intercept ($-8775.58$) as “the price of a house with nothing”?
+2. Click through the ten houses. Are the residuals all zero? Should they be?
+3. Keep everything else fixed and add one bedroom. Does the prediction change by exactly the bedroom coefficient? Why must it?
+</TryThis>
+
+<Callout kind="warning" title="Two interpretation traps">
+**Extrapolation.** The intercept is the prediction at size 0, 0 bedrooms, 0 bathrooms, age 0 — a house that is not in the data and does not exist. Coefficients describe the fitted rule near the data, not a law valid everywhere.
+
+**Causation.** “+\$9,660 per bedroom, holding size fixed” is a statement about the fitted predictor, not a promise that adding a bedroom wall would raise the sale price by that much.
+</Callout>
+
+## Fix the notation before calculating
+
+With one input, the model is $\hat y = \theta_0 + \theta_1 x$ — also written $\hat y = bx + c$. The assumption behind it is that the *expected* output given the input, $\E[y \mid x]$, is linear in $x$. Individual observations scatter around that line; they are not required to lie on it.
+
+With $n$ features we write:
+
+$$
+\hat y = h_\theta(\bx) = \theta_0 + \theta_1 x_1 + \cdots + \theta_n x_n = \sum_{i=0}^{n} \theta_i x_i = \bx\T\theta, \qquad x_0 := 1.
+$$
+
+The trick $x_0 = 1$ absorbs the intercept into the dot product, so every formula later treats the intercept like any other coefficient. Throughout this guide $m$ is the number of observations and $n$ the number of features *excluding* the intercept.
+
+| Object | Shape | Meaning |
+| --- | --- | --- |
+| $\bx_j = (1, x_{j1}, \dots, x_{jn})\T$ | $(n+1)\times 1$ | one augmented input (house j) |
+| $X$ | $m \times (n+1)$ | design matrix; row $j$ is $\bx_j\T$; first column all ones |
+| $\theta = (\theta_0,\dots,\theta_n)\T$ | $(n+1)\times 1$ | intercept and feature coefficients |
+| $\by = (y_1,\dots,y_m)\T$ | $m \times 1$ | observed targets |
+| $\hat\by = X\theta$ | $m \times 1$ | all predictions at once |
+
+<Lab title="ŷ = Xθ is just one dot product per row" purpose="Click a row of X to trace how its prediction is assembled.">
+<DesignMatrixDemo />
+</Lab>
+
+<Callout kind="note" title="Why the column of ones matters">
+Multiplying the ones column by $\theta_0$ adds the same constant to every prediction. Forget it and the fitted plane is forced through the origin — every prediction at $\bx = \mathbf 0$ becomes 0. Many hand-calculation errors start here.
+</Callout>
+
+**Univariate** regression uses one feature; **multiple** (multivariable) regression uses several to predict one output. The algebra is identical once you use $X$; only the number of columns changes.
+
+## Check your understanding
+
+<Quiz id="q1">
+A dataset has 200 houses and 4 features. What is the shape of the design matrix X (with the intercept column)?
+
+<Option>4 × 200 <Why>Rows are observations, not features.</Why></Option>
+<Option>200 × 4 <Why>This forgets the column of ones for the intercept.</Why></Option>
+<Option correct>200 × 5 <Why>m = 200 rows (one per house), n + 1 = 5 columns (ones column plus 4 features).</Why></Option>
+<Option>5 × 5 <Why>That is the shape of XᵀX, not X.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Predicting tomorrow’s maximum temperature (°C) from today’s readings is…
+
+<Option correct>Regression, because the target is a number where differences are meaningful. <Why>The target is numeric and continuous: being off by 1°C vs 5°C matters, and the loss should reflect that.</Why></Option>
+<Option>Classification, because temperatures are recorded to whole degrees. <Why>Rounding the record does not make the target a category; 21°C and 22°C are still ordered and their difference is meaningful.</Why></Option>
+<Option>Unsupervised, because the future is unknown. <Why>Historical data contain past “tomorrows”, so training targets exist. It is supervised.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+The assumption “$\E[y\mid x]$ is linear in x” means…
+
+<Option>every observed point lies exactly on a straight line <Why>Observations scatter around the line; the claim is about their average at each x.</Why></Option>
+<Option correct>the average of y at each fixed x lies on a straight line <Why>It constrains the conditional mean. Individual y’s include noise around that mean.</Why></Option>
+<Option>x and y are both normally distributed <Why>Linearity says nothing about the distribution of x; normality of errors is a separate assumption (lesson 8).</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A regression model is a family of rules $h_\theta(\bx) = \bx\T\theta$ indexed by parameters. Learning means choosing $\theta$ using examples with known targets. Before any calculation: put a 1 in front of every input, know the shapes of $X$, $\theta$ and $\by$, and remember that coefficients describe the fitted predictor near the data — not causes, and not behaviour far from the data.
+</Callout>

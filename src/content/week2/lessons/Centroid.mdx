@@ -1,0 +1,127 @@
+import { CentroidLab } from '../labs/CentroidLab';
+
+## A line splits the plane into two sides
+
+The simplest discriminative idea: draw a line between the two clouds of fish and classify by which side a new fish falls on. The line $ax_1 + bx_2 + c = 0$ can be oriented so that $ax_1 + bx_2 + c > 0$ above it and $< 0$ below it. Collect the coefficients into a **weight vector** $\bw = (a, b)\T$ and write $t = -c$:
+
+$$
+\text{boundary: } \bx\T\bw = t, \qquad \hat y = \begin{cases} 1 & \bx\T\bw > t \\ 0 & \bx\T\bw < t. \end{cases}
+$$
+
+The quantity $\bx\T\bw$ is a *score* and $t$ is the **decision threshold**. Points exactly on the boundary need a stated tie rule (this site sends ties to the positive class). In $d$ dimensions the same equation describes a hyperplane, as long as $\bw \neq \mathbf{0}$.
+
+<Callout kind="theorem" title="Why w is perpendicular to the boundary">
+Take any two points on the boundary: $\bx_a\T\bw = t$ and $\bx_b\T\bw = t$. Subtracting, $(\bx_a - \bx_b)\T\bw = 0$. Every direction *along* the boundary is orthogonal to $\bw$. Moving in the direction of $\bw$ increases the score, so $\bw$ points towards the positive side.
+</Callout>
+
+## The basic linear classifier
+
+Which line? The **basic linear classifier** makes the most naive choice that still uses the data: compute the centre of mass of each class — $\bp$ for the positives and $\bn$ for the negatives — and cut the segment between them in half with a perpendicular line.
+
+<Steps>
+Two facts pin the line down: it is perpendicular to the segment from n to p, and it passes through the midpoint.
+
+<Step title="Perpendicular to p − n">
+The normal vector of the boundary is $\bw$, so take $\bw = \bp - \bn$. It points from the negative mean to the positive mean, i.e. towards the positive side, as required.
+</Step>
+
+<Step title="The midpoint lies on the boundary">
+$$
+\ba = \frac{\bp + \bn}{2}, \qquad t = \ba\T\bw = \frac{(\bp + \bn)\T(\bp - \bn)}{2}.
+$$
+</Step>
+
+<Step title="Expand — the cross terms cancel">
+$$
+(\bp + \bn)\T(\bp - \bn) = \bp\T\bp - \bp\T\bn + \bn\T\bp - \bn\T\bn = \|\bp\|^2 - \|\bn\|^2,
+$$
+
+because $\bp\T\bn = \bn\T\bp$. Hence
+
+$$
+\boxed{\;\bw = \bp - \bn, \qquad t = \frac{\|\bp\|^2 - \|\bn\|^2}{2}\;}
+$$
+</Step>
+</Steps>
+
+<Callout kind="note">
+“Training” is just computing two means. The construction does *not* search for the best separating line: it ignores the spread and shape of each class, and can misclassify training points even when a perfect separator exists.
+</Callout>
+
+## The same classifier, seen as nearest centroid
+
+Lesson 13 rediscovers this classifier from a distance-based angle: classify a query as positive if it is closer to $\bp$ than to $\bn$. Under Euclidean distance these are *the same rule*.
+
+<Steps>
+<Step title="Compare squared distances">
+Distances are non-negative, so squaring preserves the comparison:
+
+$$
+\|\bx - \bp\|^2 < \|\bx - \bn\|^2.
+$$
+</Step>
+
+<Step title="Expand both sides">
+$$
+\bx\T\bx - 2\bx\T\bp + \|\bp\|^2 < \bx\T\bx - 2\bx\T\bn + \|\bn\|^2.
+$$
+</Step>
+
+<Step title="Cancel xᵀx and rearrange">
+$$
+2\bx\T(\bp - \bn) > \|\bp\|^2 - \|\bn\|^2 \iff \bx\T\bw > t.
+$$
+
+The quadratic terms cancel, which is why the boundary is linear. Exactly the basic linear classifier: the boundary is the set of points equidistant from the two means.
+</Step>
+</Steps>
+
+<Callout kind="example" title="Worked example">
+Positives $(3,3), (5,3)$ give $\bp = (4, 3)$; negatives $(1,0), (1,2)$ give $\bn = (1, 1)$. Then $\bw = (3, 2)$ and $t = (25 - 2)/2 = 11.5$, so the boundary is $3x_1 + 2x_2 = 11.5$. The query $(2, 3)$ scores $6 + 6 = 12 > 11.5$: positive. Check: its squared distances are $4 + 0 = 4$ to $\bp$ and $1 + 4 = 5$ to $\bn$. The midpoint $(2.5, 2)$ scores exactly 11.5.
+</Callout>
+
+<Lab title="Means, midpoint and boundary" purpose="Drag any training point and watch both means, w, t and the boundary update. Click anywhere to move the query; compare its score with its distances to the two means.">
+<CentroidLab />
+</Lab>
+
+<TryThis>
+1. Worked example: put the query on the midpoint (2.5, 2). The score equals t and the two squared distances are equal.
+2. Drag one positive point far away to the right. The positive mean follows, the boundary rotates and shifts — every training point influences the rule through the mean.
+3. Switch to “Two-clump class”. The negative class sits on both sides, so its mean lands in the middle near the positive mean: w is short and the rule gets only 6 of the 12 training points right.
+4. Drag points so the two means coincide. What happens to w, t and every prediction?
+</TryThis>
+
+## When one mean per class is not enough
+
+- **Coinciding means.** If $\bp = \bn$, then $\bw = \mathbf{0}$ and $t = 0$: every query ties. The classes may still be completely different — a ring around a disc, say — but a single mean cannot see it.
+- **Multimodal classes**. A class made of several clumps is badly summarised by one point. One remedy is several exemplars per class (lesson 13).
+- **Outliers** pull a mean, and therefore the whole boundary.
+
+## Check your understanding
+
+<Quiz id="q1">
+Centroids p = (3, 2) and n = (−1, 0). What are w and t, and how is (1, 2) classified?
+
+<Option correct>w = (4, 2), t = 6; score 8 > 6, positive <Why>t = (‖p‖² − ‖n‖²)/2 = (13 − 1)/2 = 6; squared distances 4 (to p) and 8 (to n) agree.</Why></Option>
+<Option>w = (4, 2), t = 12; negative <Why>12 is ‖p‖² − ‖n‖² before halving.</Why></Option>
+<Option>w = (2, 1), t = 1; positive <Why>(2, 1) is the midpoint a, not w; t = aᵀw.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Why does the boundary turn out linear, even though it is defined by comparing two squared distances?
+
+<Option>Because squared distances are linear in x. <Why>They are quadratic: ‖x − p‖² contains xᵀx.</Why></Option>
+<Option correct>Because the quadratic term xᵀx appears on both sides and cancels. <Why>What is left, 2xᵀ(p − n) vs ‖p‖² − ‖n‖², is linear in x.</Why></Option>
+<Option>Because the means are linear functions of the data. <Why>True, but irrelevant to the shape of the boundary in x.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+“The basic linear classifier finds the line that best separates the training data.” Evaluate.
+
+<Option>True: that is its definition. <Why>It never searches over lines; it computes two means and bisects them.</Why></Option>
+<Option correct>False: it bisects the segment between the class means, which may misclassify training points even when a perfect separator exists. <Why>It ignores spread, shape and individual points beyond their contribution to the mean.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A linear classifier predicts by the sign of $\bx\T\bw - t$; $\bw$ is normal to the boundary and points to the positive side. The basic linear classifier takes $\bw = \bp - \bn$ and $t = (\|\bp\|^2 - \|\bn\|^2)/2$, which is exactly “nearest class mean” under Euclidean distance — simple and fast, but blind to anything a mean cannot capture.
+</Callout>

@@ -58,7 +58,7 @@ export function useThemeController() {
   return { pref, setPref, resolved };
 }
 
-/** Resolved theme for components that must recolour non-CSS content (Plotly). */
+/** Resolved theme for components that must recolour non-CSS content (e.g. WebGL 3-D views). */
 export function useResolvedTheme(): ThemeId {
   const get = () => (document.documentElement.dataset.resolvedTheme as ThemeId) ?? (systemDark() ? 'dark' : 'light');
   const [t, setT] = useState(get);

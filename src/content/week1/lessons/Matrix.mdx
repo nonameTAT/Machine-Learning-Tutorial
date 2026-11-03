@@ -1,0 +1,161 @@
+import { PlaneFit3D } from '../labs/MatrixLab';
+import { ProjectionLab } from '../labs/ProjectionLab';
+
+## Why switch to matrices?
+
+With $n$ features the scalar approach needs $n+1$ partial derivatives that all look alike. Matrix notation does the same reasoning once for every coefficient: all predictions are $X\theta$, all residuals are $\be = \by - X\theta$, and the loss is a single squared length:
+
+$$
+\begin{gathered} J(\theta) = (\by - X\theta)\T(\by - X\theta) = \|\by - X\theta\|^2, \\[6pt] X = \begin{bmatrix}1 & x_{11} & \cdots & x_{1n}\\ 1 & x_{21} & \cdots & x_{2n}\\ \vdots & & \ddots & \vdots\\ 1 & x_{m1} & \cdots & x_{mn}\end{bmatrix},\qquad \by = \begin{bmatrix}y_1\\ y_2\\ \vdots\\ y_m\end{bmatrix}. \end{gathered}
+$$
+
+Two derivative rules are all you need: for a constant vector $\mathbf a$ and matrix $A$,
+
+$$
+\nabla_\theta(\mathbf a\T\theta) = \mathbf a, \qquad \nabla_\theta(\theta\T A\theta) = (A + A\T)\theta \;=\; 2A\theta \text{ if } A \text{ is symmetric}.
+$$
+
+## Deriving the normal equations
+
+<Steps>
+<Step title="Expand the quadratic">
+$$
+\begin{aligned} J(\theta) &= \by\T\by - \by\T X\theta - \theta\T X\T\by + \theta\T X\T X\theta \\ &= \by\T\by - 2\,\by\T X\theta + \theta\T X\T X\theta. \end{aligned}
+$$
+
+The two middle terms are equal because each is a $1\times1$ scalar, and a scalar equals its own transpose.
+</Step>
+
+<Step title="Differentiate term by term">
+$$
+\nabla J(\theta) = -2X\T\by + 2X\T X\theta = -2X\T(\by - X\theta).
+$$
+
+$X\T X$ is symmetric, so the quadratic rule gives $2X\T X\theta$.
+</Step>
+
+<Step title="Set the gradient to zero: the normal equations">
+$$
+X\T(\by - X\hat\theta) = \mathbf 0 \quad\Longleftrightarrow\quad X\T X\,\hat\theta = X\T\by.
+$$
+</Step>
+
+<Step title="Solve, if X has full column rank">
+$$
+\boxed{\;\hat\theta = (X\T X)^{-1}X\T\by\;}
+$$
+
+Full column rank (no column is a linear combination of the others) is exactly what makes $X\T X$ invertible.
+</Step>
+</Steps>
+
+With the MSE $\tfrac1m\|\by - X\theta\|^2$ instead, every gradient gains a factor $1/m$, giving $\nabla J = \tfrac2m X\T(X\theta - \by)$ — but the solution is identical, as lesson 2 predicted.
+
+## Why the stationary point is the global minimum
+
+A zero gradient alone could be a saddle. The second-derivative matrix (Hessian) settles it:
+
+$$
+H = \nabla^2 J(\theta) = 2X\T X, \qquad \bv\T H\bv = 2\,\bv\T X\T X\bv = 2\,\|X\bv\|^2 \;\ge\; 0 \quad\text{for every } \bv.
+$$
+
+So $H$ is positive semi-definite and $J$ is **convex**: every stationary point is a global minimum. If $X$ has full column rank, $X\bv \ne \mathbf 0$ whenever $\bv \ne \mathbf 0$, so $\bv\T H\bv > 0$: strictly convex, and the minimiser is unique.
+
+<Callout kind="theorem" title="What this proves — and what it doesn’t">
+Existence and uniqueness of the least-squares coefficients are *algebraic* facts about $X$. They say nothing about whether a linear model is appropriate, whether the sample is representative, or whether predictions will be accurate on new data. Those are the questions of lessons 8, 11 and 13.
+</Callout>
+
+## Geometry: least squares is a projection
+
+Stack the $m$ targets into one vector $\by \in \R^m$, one axis per observation. Every possible prediction vector $X\theta = \theta_0\mathbf 1 + \theta_1\bx$ is a combination of the columns of $X$, so all of them lie in one flat subspace: the **column space** of $X$. Least squares picks the point of that subspace closest to $\by$, which is the foot of the perpendicular from $\by$. With three observations and two columns this can be drawn exactly: $\R^3$, and a plane through the origin.
+
+<Lab title="Least squares as a projection" purpose="Three observations, so y is a vector in ℝ³. The shaded plane holds every Xθ; ŷ is the point of it closest to y. Rotate the view to look along the plane.">
+<ProjectionLab />
+</Lab>
+
+<TryThis>
+1. Rotate until you look edge-on along the plane: the residual $\be$ stands at a right angle to it, and the readout $X\T\be$ is $(0, 0)$ whatever $\by$ is.
+2. Move $y_1$, $y_2$, $y_3$. $\hat\by$ slides around inside the plane but never leaves it, and $\be$ stays perpendicular.
+3. Set $\by = (1, 2, 3)$ (or any $a + b\,x$). Now $\by$ lies in the plane, so $\be = \mathbf 0$ and the fit is exact.
+4. Turn on “Compare with another θ”. The dashed $X\theta$ is another point of the plane, and $\by$, $\hat\by$, $X\theta$ form a right triangle, so $\|\by - X\theta\|^2 = \|\be\|^2 + \|X(\hat\theta - \theta)\|^2$: every other θ has a larger SSE.
+</TryThis>
+
+The normal equations $X\T\be = \mathbf 0$ say: the residual vector is **orthogonal to every column** of $X$. Read row by row, that is $\sum_j e_j = 0$ (ones column) and $\sum_j x_{ji}e_j = 0$ for every feature — the identities from lesson 4, now for any $n$. Intuitively: if the residual had any component along a feature direction, moving $\theta$ in that direction would shrink it, so we were not at the best fit.
+
+<Callout kind="warning">
+This orthogonality lives in $\R^m$ — the space with one axis per *observation*. It is not perpendicular distance on the x–y scatter plot. Least squares still minimises vertical distances there.
+</Callout>
+
+## Check: the one-feature case is a special case
+
+For one feature,
+
+$$
+\begin{gathered} X\T X = \begin{bmatrix} m & \sum_j x_j\\ \sum_j x_j & \sum_j x_j^2\end{bmatrix}, \qquad X\T\by = \begin{bmatrix}\sum_j y_j\\ \sum_j x_jy_j\end{bmatrix}, \\[6pt] \det(X\T X) = m\sum_j x_j^2 - \Big(\sum_j x_j\Big)^2 = m\,S_{xx}. \end{gathered}
+$$
+
+So “$X\T X$ invertible” is exactly “$S_{xx} > 0$” from lesson 4. For the running example $x=(3,6,7,8,11)$, $y=(13,8,11,2,6)$:
+
+$$
+X\T X = \begin{bmatrix}5 & 35\\ 35 & 279\end{bmatrix},\qquad X\T\by = \begin{bmatrix}40\\ 246\end{bmatrix},\qquad \begin{bmatrix}5 & 35\\ 35 & 279\end{bmatrix}\begin{bmatrix}15\\ -1\end{bmatrix} = \begin{bmatrix}40\\ 246\end{bmatrix}. \;\checkmark
+$$
+
+## Multiple regression in 3-D
+
+Now predict weight from height and body-frame size: $\hat w = \theta_0 + \theta_1 h + \theta_2 b$, minimising $\sum_j \big(w_j - (\theta_0 + \theta_1h_j + \theta_2b_j)\big)^2$. The fitted object is now a plane, and the residuals are vertical distances to it.
+
+<Lab title="Plane of best fit" purpose="Synthetic data generated from a known plane plus noise. Fit, rotate, and resample.">
+<PlaneFit3D />
+</Lab>
+
+<TryThis>
+1. Set noise to 0. The estimates should equal the true coefficients exactly (up to rounding). Why?
+2. Set noise to 12 and resample several times. Which coefficient is least stable? (Hint: height and frame are correlated in this data, and frame has a much smaller spread.)
+</TryThis>
+
+## When the inverse does not exist
+
+You need **full column rank**, not merely “lots of rows”. Each of these breaks it, regardless of $m$:
+
+| Situation | Why columns are dependent | Consequence |
+| --- | --- | --- |
+| Two identical (or proportional) columns | col₂ = c · col₁ | raise one coefficient, lower the other: same predictions |
+| A feature that is constant across all rows | it is a multiple of the ones column | cannot separate its effect from the intercept |
+| Height in cm and height in inches | proportional columns | coefficients not identifiable |
+| More coefficients than rows (n + 1 > m) | rank ≤ m \< n + 1 | infinitely many exact fits |
+
+A least-squares minimiser still exists in each case (the loss is still a convex bowl, now with a flat valley along the null-space direction), but it is not unique and $(X\T X)^{-1}$ is invalid. Ridge regression (lesson 10) restores uniqueness by adding $\lambda I$.
+
+## A computing note
+
+Forming $X\T X$ costs about $O(mn^2)$ and solving the $(n+1)\times(n+1)$ system $O(n^3)$. That is cheap for tens or hundreds of features and expensive for very many — one reason iterative methods like gradient descent (next lesson) exist. In practice, libraries solve the linear system (or use a QR decomposition) rather than computing an explicit inverse, which is slower and less accurate.
+
+## Check your understanding
+
+<Quiz id="q1">
+Why are the terms $\by\T X\theta$ and $\theta\T X\T\by$ equal?
+
+<Option>Because X is symmetric. <Why>X is m × (n+1); it is generally not even square.</Why></Option>
+<Option correct>Because each is a 1×1 scalar, and a scalar equals its transpose. <Why>(𝐲ᵀXθ)ᵀ = θᵀXᵀ𝐲, and a 1×1 matrix is its own transpose.</Why></Option>
+<Option>Because matrix multiplication is commutative. <Why>It is not; the equality here is a transpose identity.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Your design matrix has an intercept column and two features that are exact copies. With 10,000 rows, the OLS coefficients are…
+
+<Option>unique, because m is large <Why>Rank depends on column dependence, not row count.</Why></Option>
+<Option correct>not unique: only the sum of the two copies’ coefficients is determined <Why>Increase one and decrease the other by the same amount and every prediction is unchanged.</Why></Option>
+<Option>all zero <Why>Nothing forces zeros; the fit still uses the information in the feature.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+What does $X\T\be = \mathbf 0$ mean geometrically?
+
+<Option>The fitted line is perpendicular to the data points. <Why>The orthogonality is in ℝᵐ (one axis per observation), not on the scatter plot.</Why></Option>
+<Option correct>The residual vector is orthogonal to every column of X. <Why>Each row of Xᵀ is a column of X, so each entry of Xᵀe is a dot product of a column with e.</Why></Option>
+<Option>All residuals are zero. <Why>Only their dot products with the columns vanish.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+$\nabla\|\by - X\theta\|^2 = -2X\T(\by - X\theta)$. Setting it to zero gives $X\T X\hat\theta = X\T\by$: the residual is orthogonal to every column of $X$. The Hessian $2X\T X$ is positive semi-definite, so this is a global minimum; full column rank makes it unique and gives $\hat\theta = (X\T X)^{-1}X\T\by$.
+</Callout>

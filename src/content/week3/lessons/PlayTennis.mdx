@@ -1,0 +1,93 @@
+import { PlayTennisLab } from '../labs/PlayTennisLab';
+
+## Strategy: count within a class, then score the whole instance
+
+The PlayTennis data has 14 days described by outlook, temperature, humidity and wind, labelled “play” = yes (9 days) or no (5 days). Training Naive Bayes means building, for each class, a count table of every attribute value:
+
+| feature | value | yes (of 9) | no (of 5) |
+| --- | --- | --- | --- |
+| outlook | sunny / overcast / rainy | 2 / 4 / 3 | 3 / 0 / 2 |
+| temperature | hot / mild / cool | 2 / 4 / 3 | 2 / 2 / 1 |
+| humidity | high / normal | 3 / 6 | 4 / 1 |
+| windy | false / true | 6 / 3 | 2 / 3 |
+
+Each feature’s counts sum to the size of its class. Conditioning restricts the denominator: $\hat P(\text{sunny} \mid \text{yes}) = 2/9$, not $2/14$.
+
+## Classify a new day
+
+Query $x = \langle\text{sunny}, \text{cool}, \text{high}, \text{wind} = \text{true}\rangle$, unsmoothed estimates:
+
+<Steps>
+<Step title="Score “yes”: prior × one factor per feature">
+$$
+s_{\text{yes}} = \frac{9}{14}\times\frac29\times\frac39\times\frac39\times\frac39 = \frac{1}{189} \approx 0.005291.
+$$
+</Step>
+
+<Step title="Score “no”">
+$$
+s_{\text{no}} = \frac{5}{14}\times\frac35\times\frac15\times\frac45\times\frac35 = \frac{18}{875} \approx 0.020571.
+$$
+</Step>
+
+<Step title="Decide">
+The larger score wins: predict **no**. The scores include the priors; they are not just the likelihoods.
+</Step>
+
+<Step title="Normalise if a probability is requested">
+$$
+\hat P(\text{yes} \mid x) = \frac{s_{\text{yes}}}{s_{\text{yes}} + s_{\text{no}}} = \frac{125}{611} \approx 0.2046, \qquad \hat P(\text{no} \mid x) = \frac{486}{611} \approx 0.7954.
+$$
+</Step>
+</Steps>
+
+<Callout kind="warning" title="Watch the denominators">
+A common slip is to write $4/9$ and $3/9$ in the “no” product. The count table requires $4/5$ (high humidity) and $3/5$ (windy) — every “no” denominator is 5, because there are 5 “no” days. Rounded, the posteriors are 0.205 and 0.795.
+</Callout>
+
+<Callout kind="note" title="Verify before moving on">
+- The class priors sum to 1; within a class and feature, the value probabilities sum to 1.
+- Exactly one factor from each feature appears in each score.
+- Every “no” conditional has denominator 5; every “yes” conditional has denominator 9.
+- The normalised posteriors sum to 1 and are ordered like the scores.
+</Callout>
+
+<Lab title="Naive Bayes on PlayTennis" purpose="Choose any day. The training table highlights the matching cells; the right-hand table shows each factor as a count; the scores use exact fractions.">
+<PlayTennisLab />
+</Lab>
+
+<TryThis>
+1. Reproduce the worked example: (sunny, cool, high, windy = true) gives 1/189 and 18/875.
+2. Change to (overcast, …). The “no” score collapses to exactly 0 because no “no” day was overcast — then turn on Laplace smoothing (lesson 11).
+3. Find a day the model calls “yes” with high confidence. Which single feature value contributes the most?
+4. Set wind to “?” — the factor is omitted (lesson 16 explains why that is correct for Naive Bayes).
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+What is the unsmoothed estimate of P(temperature = mild | no)?
+
+<Option correct>2/5 <Why>Two of the five “no” days are mild.</Why></Option>
+<Option>2/14 <Why>The denominator must be the number of “no” days, not all days.</Why></Option>
+<Option>6/14 <Why>That is P(mild) over both classes.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+For the query (overcast, hot, normal, windy = false), what is the unsmoothed score for “no”, and why?
+
+<Option correct>0, because P(overcast | no) = 0/5 <Why>One zero factor makes the whole product zero.</Why></Option>
+<Option>A small positive number <Why>Without smoothing, the overcast factor is exactly 0.</Why></Option>
+<Option>Undefined <Why>It is defined (0); only the posterior would be undefined if all class scores were 0.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+s_yes = 1/189 and s_no = 18/875. Are these the posterior probabilities?
+
+<Option>Yes <Why>They do not sum to 1.</Why></Option>
+<Option correct>No — they are unnormalised scores (joint probabilities under the model); divide by their sum. <Why>Posterior yes = (1/189)/(1/189 + 18/875) = 125/611.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Naive Bayes trains by counting each feature value within each class and predicts by multiplying the prior with one conditional per feature: $s_c = \hat P(c)\prod_j \hat P(x_j \mid c)$. Use within-class denominators, compare scores for the decision, and normalise only when a probability is asked for.
+</Callout>

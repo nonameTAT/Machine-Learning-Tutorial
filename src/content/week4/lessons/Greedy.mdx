@@ -1,0 +1,112 @@
+import { DepthLab } from '../labs/DepthLab';
+import { XorGainLab } from '../labs/XorGainLab';
+
+## Many trees fit; the learner must prefer one
+
+Week 3 opened with a fact that applies here with full force: the training data never determine the predictions for unseen inputs. Many different trees classify the 14 PlayTennis days perfectly and disagree about other days. Whatever makes a learner pick one of them is its **inductive bias**. For trees it helps to separate two kinds.
+
+|  | Restriction bias | Preference bias |
+| --- | --- | --- |
+| What it is | limits on which hypotheses can be expressed at all | an ordering of the hypotheses that can be expressed |
+| ID3 on categorical attributes | trees over the given attributes — a complete class, so no function of the attributes is ruled out (lesson 2) | shorter trees, with high-gain tests near the root |
+| Trees with numeric thresholds | axis-parallel regions only (lesson 1) | the same greedy preference, plus any pruning rule |
+
+ID3’s preference is a version of Occam’s razor — prefer simple explanations — implemented by a search procedure rather than stated as a score. It tends to produce short trees; it does not guarantee the shortest one.
+
+## What “greedy” means
+
+At each node ID3 takes the test with the largest *immediate* gain, commits to it, and never revisits the decision. It is hill-climbing through the space of trees, from simple to complex, with no backtracking. That is fast — and since finding a smallest consistent tree is NP-hard in general, some such compromise is unavoidable. The price is that a locally best test need not begin the best tree. Lesson 6 showed a mild version (a poor root on PlayTennis costs three extra leaves); XOR shows the extreme.
+
+Two further properties of this search are worth knowing. ID3 outputs a *single* tree: it cannot say how many other trees fit the data equally well. And every decision uses all the training examples at the node, as counts, so one mislabelled example shifts a gain only a little — the search is less sensitive to individual errors than a method that reacts to one example at a time.
+
+## XOR: zero gain, then a perfect split
+
+Four equally weighted examples, $Y = A \oplus B$:
+
+| A | B | Y |
+| --- | --- | --- |
+| f | f | False |
+| f | t | True |
+| t | f | True |
+| t | t | False |
+
+<Steps>
+<Step title="Root entropy">
+Two True, two False: $H(S) = 1$.
+</Step>
+
+<Step title="Gain of A at the root">
+$$
+\text{A = t: (1 True, 1 False)},\quad \text{A = f: (1 True, 1 False)} \;\Rightarrow\; \operatorname{IG}(S, A) = 1 - \big(\tfrac12 \cdot 1 + \tfrac12 \cdot 1\big) = 0.
+$$
+</Step>
+
+<Step title="Gain of B at the root">
+By symmetry, also 0. On its own, neither input says anything about the label.
+</Step>
+
+<Step title="Gain of B inside A = t">
+Now B = f gives True and B = t gives False: both children pure, local entropy 1, so the gain of B here is 1.
+</Step>
+</Steps>
+
+The information is in the **interaction**: B’s relationship with Y depends on A. A first step with no immediate benefit makes a perfect second step possible.
+
+<Lab title="Gains at the root and one level down" purpose="Each cell of the truth table is one example; click a cell to flip its label. Compare the root gains with the gains inside a branch, with and without early stopping.">
+<XorGainLab />
+</Lab>
+
+<TryThis>
+1. XOR without early stopping: depth 2, no training errors. Turn on “stop when the best gain is 0”: a single leaf and 2 errors out of 4.
+2. AND: the root gains are positive (0.311 each), so early stopping is harmless here.
+3. Y = A: A has gain 1 and B gain 0 at the root, and the tree never tests B.
+4. Make your own function by clicking cells. Which ones have zero gain for both inputs at the root?
+</TryThis>
+
+<Callout kind="warning" title="Representation succeeded; the stopping rule failed">
+A depth-2 tree represents XOR exactly. A procedure that stops whenever every immediate gain is zero cannot discover it. That failure belongs to the extra stopping rule, not to the tree representation — one reason to grow first and prune afterwards (lesson 12).
+</Callout>
+
+## XOR in the plane
+
+With numeric features the same interaction appears as a checkerboard: class 1 in two opposite quadrants. Now the root gains are not exactly zero — sampling noise makes some threshold slightly better than the others — so the greedy root split is chosen by noise.
+
+<Lab title="A greedy tree on quadrant data" purpose="250 noisy training points; class 1 in the top-left and bottom-right quadrants. Watch where the root split lands.">
+<DepthLab initialShape="xor" />
+</Lab>
+
+<TryThis>
+1. Depth 1 and 2: the held-out error stays near 50%. The root cut sits near the edge of the square (about x₁ = 0.04), where a sliver of points happens to be slightly purer.
+2. Increase the depth: the tree eventually recovers the quadrants, but only after spending many extra leaves around its bad first cut.
+3. Draw new training samples. Sometimes the root lands near 0.5 and depth 2 is already good — the greedy choice is at the mercy of the sample.
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+For the four XOR examples, what is the information gain of A at the root?
+
+<Option correct>0 <Why>Each branch of A still holds one True and one False.</Why></Option>
+<Option>1 <Why>That is B’s gain inside a branch of A, not A’s gain at the root.</Why></Option>
+<Option>0.5 <Why>Both children have entropy 1, so the expected entropy after the test is still 1.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Which best describes ID3’s inductive bias on categorical data?
+
+<Option>A restriction bias: it can only represent some functions <Why>Trees on categorical attributes can represent every function of them.</Why></Option>
+<Option correct>A preference bias: shorter trees, with informative tests near the root, found by greedy search <Why>The bias lies in which representable tree it picks.</Why></Option>
+<Option>No bias: it fits the data exactly <Why>Many trees fit exactly; choosing among them is the bias.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+“Greedy” in ID3 means…
+
+<Option>it always finds the smallest consistent tree <Why>It does not; finding that tree is NP-hard in general.</Why></Option>
+<Option correct>it picks the best immediate test at each node and never revisits earlier choices <Why>Locally best, committed, no backtracking.</Why></Option>
+<Option>it uses as many attributes as possible <Why>It uses whichever tests score best, as few as needed.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A learner needs a preference among the many trees that fit the data. ID3’s is a preference bias for short trees with high-gain tests near the root, implemented greedily: best immediate test, no backtracking. XOR shows the cost — every single test has zero gain, yet two tests together are perfect — so “stop when gain is zero” is an extra rule that can fail, and interactions are better found by growing first and pruning later.
+</Callout>

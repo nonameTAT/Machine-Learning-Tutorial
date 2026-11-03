@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import type { ProblemGroup } from '../components/ProblemSet';
 
 // What a week's index.ts describes. The shell builds routes, the sidebar, the overview
@@ -23,12 +23,14 @@ export interface PartDef {
   lessons: LessonDef[];
 }
 
+/** A week's practice.mdx: `import Practice, { blurb, groups } from './practice.mdx'` → `{ blurb, groups, page: Practice }`. */
 export interface PracticeDef {
-  /** One line for the overview card. */
+  /** One line for the overview card (`export const blurb` in practice.mdx). */
   blurb: string;
+  /** Problem ids, titles and lessons, generated from the <Group>/<Problem> elements of practice.mdx. */
   groups: ProblemGroup[];
-  /** Shown after the problems, e.g. a list of common mistakes. */
-  footer?: ReactNode;
+  /** The problems themselves, plus anything after them such as a list of common mistakes. */
+  page: ComponentType;
 }
 
 export interface ReadinessDef {
@@ -58,6 +60,16 @@ export interface WeekDef {
 /** Identity function that gives a week's index.ts type checking and editor completion. */
 export const defineWeek = (week: WeekDef) => week;
 
+/** Generated for every .mdx page by remarkLessonStats (mdx/plugins.ts). */
+export interface PageStats {
+  words: number;
+  labs: number;
+  quizzes: number;
+  derivations: number;
+  /** rough study time, rounded to 5 minutes */
+  minutes: number;
+}
+
 /* ---------------- what the registry builds ---------------- */
 
 export type PageKind = 'overview' | 'lesson' | 'practice' | 'reference' | 'readiness';
@@ -75,6 +87,8 @@ export interface Page {
   question: string;
   checks: string[];
   Component: ComponentType;
+  /** size of an .mdx page (lessons always have it) */
+  stats?: PageStats;
 }
 
 export interface Week {

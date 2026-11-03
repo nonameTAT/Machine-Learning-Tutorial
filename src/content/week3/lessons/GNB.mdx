@@ -1,0 +1,76 @@
+import { GaussNBLab } from '../labs/GaussNBLab';
+
+## Replace the frequency table with a density
+
+A continuous measurement — a temperature of 66.3° — seldom repeats exactly, so a table of exact-value counts is useless. The usual assumption:*given the class*, each numeric attribute is Gaussian,
+
+$$
+X_j \mid Y = c \;\sim\; \N(\mu_{jc}, \sigma^2_{jc}), \qquad p(x_j \mid c) = \frac{1}{\sqrt{2\pi}\,\sigma_{jc}}\exp\Big(-\frac{(x_j - \mu_{jc})^2}{2\sigma_{jc}^2}\Big).
+$$
+
+The mean locates the class’s typical value; the standard deviation describes its spread. As before, multiply the feature densities and the prior, then compare class scores. Conditional independence is still assumed — the Gaussian shape does not imply it.
+
+## Estimate the parameters within each class
+
+For class $c$ with $n_c$ examples, we use the sample mean and the sample standard deviation (dividing by $n - 1$), separately for each class:
+
+$$
+\hat\mu_{jc} = \frac{1}{n_c}\sum_{i\in I_c} x_{ij}, \qquad s_{jc} = \sqrt{\frac{1}{n_c - 1}\sum_{i\in I_c}(x_{ij} - \hat\mu_{jc})^2}.
+$$
+
+The Gaussian *maximum-likelihood* variance divides by $n_c$ instead. These are different conventions — use the one requested. Missing values during training are simply left out of the mean and standard deviation for that feature and class.
+
+<Callout kind="example" title="A density value">
+Temperature in class “yes” has $\mu = 73$, $\sigma = 6.2$. At 66:
+
+$$
+p(66 \mid \text{yes}) = \frac{1}{\sqrt{2\pi}\times 6.2}\exp\Big(-\frac{(66 - 73)^2}{2\times 6.2^2}\Big) \approx 0.0340.
+$$
+
+Multiply this by the other features’ factors and by $P(\text{yes})$; on its own it is not the posterior probability of “yes”.
+</Callout>
+
+<Callout kind="warning" title="A density is not a point probability">
+For a continuous variable $P(X = 66 \mid c) = 0$; $p(66 \mid c)$ is a density, and probabilities are areas over intervals. Densities can exceed 1 (a Gaussian with $\sigma = 0.1$ peaks near 4). After normalising the class scores at the observed $x$, the resulting posteriors are ordinary probabilities that sum to 1.
+</Callout>
+
+<p className="small muted">Careful: dividing the squared deviations by $n - 1$ gives a variance; the standard deviation needs the square root. The Gaussian prefactor is $1/(\sqrt{2\pi}\,\sigma) = 1/\sqrt{2\pi\sigma^2}$. A zero estimated variance makes the density degenerate and needs separate handling.</p>
+
+<Lab title="Gaussian class-conditionals for temperature" purpose="Each class’s temperatures are summarised by a mean and a standard deviation. Move the query and compare the densities and the posterior.">
+<GaussNBLab />
+</Lab>
+
+<TryThis>
+1. At 66° the “yes” density is about 0.0340 because the “yes” data have mean 73 and s ≈ 6.16.
+2. Switch to the MLE convention: both spreads shrink slightly, the curves get taller and narrower, and posteriors far from the means change most.
+3. Move the query to 90°. The “no” class is more spread out, so it wins in both tails even though its mean (74.6) is close to “yes” (73).
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+A class has values (1, 2, 6). What are its sample variance (n − 1) and its MLE variance?
+
+<Option correct>7 and 14/3 <Why>Mean 3; squared deviations 4 + 1 + 9 = 14; 14/2 = 7 and 14/3.</Why></Option>
+<Option>14/3 and 7 <Why>The MLE divides by n = 3 and is the smaller one.</Why></Option>
+<Option>√7 and √(14/3) <Why>Those are standard deviations.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+A Gaussian NB model reports p(x | c) = 1.8 at the query. What follows?
+
+<Option>Something is wrong — probabilities cannot exceed 1. <Why>It is a density, which can exceed 1 when σ is small.</Why></Option>
+<Option correct>Nothing is wrong; it is a density value. Combine it with the prior and other factors, then normalise. <Why>Only the normalised posteriors must lie in [0, 1].</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Which assumptions does Gaussian Naive Bayes make about two numeric features?
+
+<Option correct>Each is Gaussian within each class, and they are independent given the class. <Why>Both the distributional form and conditional independence.</Why></Option>
+<Option>Each is Gaussian overall. <Why>The assumption is per class; the overall distribution is a mixture.</Why></Option>
+<Option>Gaussian features are automatically independent. <Why>Independence is a separate assumption.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Gaussian Naive Bayes models each numeric feature, within each class, as $\N(\mu_{jc}, \sigma^2_{jc})$ with parameters estimated from that class’s data. Its densities replace count-based probabilities in the product $P(c)\prod_j p(x_j \mid c)$; they are not probabilities themselves, but the normalised posteriors are.
+</Callout>

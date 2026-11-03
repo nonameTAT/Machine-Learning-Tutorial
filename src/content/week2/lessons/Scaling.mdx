@@ -1,0 +1,96 @@
+import { NormaliseLab } from '../labs/NormaliseLab';
+import { ScalingLab } from '../labs/ScalingLab';
+
+## Raw units can choose the neighbour for you
+
+Euclidean distance adds squared coordinate differences. If one feature ranges over $[0, 100]$ and another over $[-1, 1]$, the first dominates every distance — regardless of which one actually predicts the class. Change the units (metres to millimetres) and you change the classifier without changing a single observation. So attributes have to be normalised. Why, exactly?
+
+<Callout kind="example" title="Worked example">
+Query $(0, 0)$; candidates $A = (1, 80)$ and $B = (3, 10)$. In raw units
+
+$$
+d(A, q) = \sqrt{1 + 6400} \approx 80.006, \qquad d(B, q) = \sqrt{9 + 100} \approx 10.440,
+$$
+
+so B is nearer. Suppose the training ranges of the two features are 10 and 1,000. Dividing each coordinate difference by its range,
+
+$$
+d_{\text{scaled}}(A, q) = \sqrt{0.1^2 + 0.08^2} \approx 0.128, \qquad d_{\text{scaled}}(B, q) = \sqrt{0.3^2 + 0.01^2} \approx 0.300,
+$$
+
+and now A is nearer. Scaling changed the neighbourhood — it is a modelling choice, not a way to print smaller numbers.
+</Callout>
+
+## Two common normalisations
+
+For feature $r$, let $a_r$ and $b_r$ be its minimum and maximum *on the training data*. **Min-max normalisation**:
+
+$$
+x'_r = \frac{x_r - a_r}{b_r - a_r}.
+$$
+
+Training values land in $[0, 1]$. A future value outside the training range maps below 0 or above 1 — not an error, and not a reason to refit the scaler on the test data.
+
+With training mean $\mu_r$ and standard deviation $s_r$, **z-score normalisation** expresses a value in units of the feature’s spread:
+
+$$
+x'_r = \frac{x_r - \mu_r}{s_r}.
+$$
+
+It does not make the feature normally distributed. For both, a constant training feature gives a zero denominator: it carries no information, so drop it (or state another policy).
+
+<Lab title="One feature, three scales" purpose="Eight training ages and one test value, on the raw scale and after each normalisation. Both scalers are fitted on the training values only.">
+<NormaliseLab />
+</Lab>
+
+<TryThis>
+1. Move the test value above 52: its min-max value exceeds 1. That is expected for new data, not a reason to refit the scaler.
+2. Both scalings keep the order and the relative spacing of the values; they only change the origin and the unit.
+3. Add the unusual training value 95. Min-max now squeezes the eight ordinary ages into [0, 0.41]. The z-scores shrink too, because s more than doubles (9.7 to 20.6). One extreme training value changes both scalers.
+</TryThis>
+
+**Nominal attributes** with no ordering use simple matching instead: distance 1 if the categories differ, 0 if they match. Mixing feature types needs care: decide deliberately how much a category mismatch should count relative to a numeric difference.
+
+<Callout kind="warning" title="Fit the scaler on training data only">
+$a_r, b_r, \mu_r, s_r$ are fitted quantities. Compute them on the training portion and apply the same numbers to validation and test inputs; inside cross-validation, recompute them in every fold (lesson 6).
+</Callout>
+
+## See the neighbourhood change shape
+
+<Lab title="Same data, three scalings" purpose="The shaded shape contains every point as close to the query as its k-th neighbour, under the chosen scaling. Age decides the class; income is irrelevant.">
+<ScalingLab />
+</Lab>
+
+<TryThis>
+1. Raw units: the neighbourhood is a thin horizontal band — neighbours are chosen by income alone, even though income has nothing to do with the class. Compare the LOOCV accuracies.
+2. Switch to min-max or z-score: the neighbourhood becomes round, both features count, and accuracy jumps.
+3. Even scaled, income still contributes noise to every distance. Scaling fixes units, not relevance (lessons 18 and 16’s weighting fix relevance).
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+Training values of a feature range from 20 to 70. A test value is 80. What is its min-max normalised value, and is that a problem?
+
+<Option correct>1.2 — fine: test values may fall outside [0, 1]. <Why>(80 − 20)/(70 − 20) = 1.2. Refitting the scaler on test data would leak information.</Why></Option>
+<Option>1 — clip it, the formula only allows [0, 1]. <Why>Nothing in the formula restricts new inputs; clipping is an optional extra choice.</Why></Option>
+<Option>Refit min and max including the test value. <Why>That lets the test set shape the procedure.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+“After z-score normalisation every feature is equally relevant to the class.” Evaluate.
+
+<Option>True — they now have equal spread. <Why>Equal spread means equal influence on the distance, which is bad for irrelevant features.</Why></Option>
+<Option correct>False: scaling addresses units and magnitudes, not predictive relevance. <Why>Feature selection or weighting addresses relevance.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Converting a feature from kilometres to metres changes the predictions of unscaled k-NN. Why?
+
+<Option correct>It multiplies that feature’s differences by 1000, increasing its weight in the Euclidean distance. <Why>So different points become nearest.</Why></Option>
+<Option>It does not — distances are unit-free. <Why>Raw Euclidean distance mixes units.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Unscaled Euclidean distance lets large-unit features dominate, so the units choose the neighbours. Min-max $(x - a)/(b - a)$ and z-score $(x - \mu)/s$ normalisation, fitted on training data only, put features on comparable scales; nominal features use matching distance. Scaling fixes magnitude, not relevance.
+</Callout>

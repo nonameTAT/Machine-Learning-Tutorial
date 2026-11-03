@@ -1,20 +1,20 @@
 import { defineWeek } from '../../course/types';
-import Overview from './Overview';
-import Reference from './Reference';
-import practice from './practice';
-import Learning from './lessons/Learning';
-import Loss from './lessons/Loss';
-import Stats from './lessons/Stats';
-import Ols1d from './lessons/Ols1d';
-import Matrix from './lessons/Matrix';
-import GD from './lessons/GD';
-import MLE from './lessons/MLE';
-import Assumptions from './lessons/Assumptions';
-import Features from './lessons/Features';
-import Regularisation from './lessons/Regularisation';
-import Evaluation from './lessons/Evaluation';
-import KNN from './lessons/KNN';
-import BiasVariance from './lessons/BiasVariance';
+import Overview from './Overview.mdx';
+import Reference from './Reference.mdx';
+import Practice, { blurb, groups } from './practice.mdx';
+import Learning from './lessons/Learning.mdx';
+import Loss from './lessons/Loss.mdx';
+import Stats from './lessons/Stats.mdx';
+import Ols1d from './lessons/Ols1d.mdx';
+import Matrix from './lessons/Matrix.mdx';
+import GD from './lessons/GD.mdx';
+import MLE from './lessons/MLE.mdx';
+import Assumptions from './lessons/Assumptions.mdx';
+import Features from './lessons/Features.mdx';
+import Regularisation from './lessons/Regularisation.mdx';
+import Evaluation from './lessons/Evaluation.mdx';
+import KNN from './lessons/KNN.mdx';
+import BiasVariance from './lessons/BiasVariance.mdx';
 
 export default defineWeek({
   n: 1,
@@ -215,7 +215,7 @@ export default defineWeek({
       ],
     },
   ],
-  practice,
+  practice: { blurb, groups, page: Practice },
   reference: Reference,
   readiness: {
     items: [

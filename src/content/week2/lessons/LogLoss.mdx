@@ -1,0 +1,110 @@
+import { ConvexityLab, LossCurveLab } from '../labs/LossLab';
+
+## Which coefficients? Ask which make the labels most probable
+
+Lesson 3 gave a model with unknown coefficients β. To fit it we need an objective. Week 1 found one with **maximum likelihood**: tell a story of how the data arise, then choose the parameters under which the observed data are most probable. With Gaussian noise that story produced squared error. Here the response is a single yes/no outcome, so the natural story is a biased coin whose probability of heads depends on the input.
+
+Write $p_j = h_\beta(\bx_j) = \sigma(\bxt_j\T\beta)$. The probability the model assigns to the label actually observed can be written in one line:
+
+$$
+P(Y_j = y_j \mid \bx_j; \beta) = p_j^{\,y_j}(1 - p_j)^{1 - y_j}.
+$$
+
+Check both cases: if $y_j = 1$ the second factor is $(1-p_j)^0 = 1$, leaving $p_j$; if $y_j = 0$ the first factor is 1, leaving $1 - p_j$. The exponents act as a switch that picks the probability of the true label. This is a **Bernoulli** model whose parameter depends on the input.
+
+## From the likelihood to the loss
+
+<Steps>
+Assume the observations are independent given their inputs. Predict each line before revealing it.
+
+<Step title="Independence: the likelihood is a product">
+$$
+\Lik(\beta) = \prod_{j=1}^m P(Y_j = y_j \mid \bx_j; \beta) = \prod_{j=1}^m p_j^{\,y_j}(1 - p_j)^{1 - y_j}.
+$$
+</Step>
+
+<Step title="Take logs: products become sums">
+$$
+\ell(\beta) = \log\Lik(\beta) = \sum_{j=1}^m \big[y_j\log p_j + (1 - y_j)\log(1 - p_j)\big].
+$$
+
+Log is strictly increasing, so it does not move the maximiser. It also avoids multiplying hundreds of numbers below 1.
+</Step>
+
+<Step title="Negate and average: a loss to minimise">
+$$
+\boxed{\;J(\beta) = -\frac1m\sum_{j=1}^m \big[y_j\log p_j + (1 - y_j)\log(1 - p_j)\big]\;}
+$$
+
+This is the cost function, usually called **binary cross-entropy** or **log loss** — two names for the same formula. Maximising ℓ and minimising $J$ give the same β; the $1/m$ only rescales. Logs are natural logs.
+</Step>
+</Steps>
+
+<Callout kind="note" title="Where each assumption is used">
+**Independence** is used once: to write the joint probability as a product. The **binary labels** are used to select the right factor through the exponents $y_j$ and $1 - y_j$. The sigmoid form of $p_j$ has not been used yet — it enters when we differentiate (lesson 5).
+</Callout>
+
+## Read the loss one observation at a time
+
+For a positive observation the loss is $-\log p$; for a negative one it is $-\log(1 - p)$. Either way, the model pays $-\log(\text{probability it gave to the true label})$.
+
+| true y | predicted p | loss | interpretation |
+| --- | --- | --- | --- |
+| 1 | 0.9 | $-\log 0.9 \approx 0.105$ | confident and correct |
+| 1 | 0.1 | $-\log 0.1 \approx 2.303$ | confident and wrong |
+| 0 | 0.1 | $-\log 0.9 \approx 0.105$ | high probability on class 0 — correct |
+| 0 | 0.9 | $-\log 0.1 \approx 2.303$ | low probability on the true class |
+
+Both $p = 0.51$ and $p = 0.99$ predict class 1 at threshold ½, but their losses for a positive are 0.673 and 0.010. Accuracy cannot tell them apart; likelihood-based training can. And as the probability of the true label tends to 0, its loss tends to infinity.
+
+<Lab title="Loss of a single observation" purpose="Slide the predicted probability. The circle is the loss if the truth is positive, the square if it is negative.">
+<LossCurveLab />
+</Lab>
+
+## Why not reuse squared error?
+
+Plugging the sigmoid into the Week 1 squared loss gives a **non-convex** function of the coefficients, with flat regions where gradient methods make little progress. Log loss, by contrast, is convex (lesson 5).
+
+<Lab title="Both losses as a function of one coefficient" purpose="Eight points, two of them on the ‘wrong’ side; score z = b·x. Move b and compare the shapes.">
+<ConvexityLab />
+</Lab>
+
+<TryThis>
+1. Move b far to the left. Log loss keeps rising (it punishes the confident mistakes); squared error levels off at 0.75 — the gradient almost vanishes there.
+2. Compare the two minimisers. They need not coincide: the objectives are different, not two ways of writing the same one.
+3. Explain, without calculus, why a bounded function that is not constant cannot be convex on the whole real line.
+</TryThis>
+
+<Callout kind="warning" title="Keep the claim precise">
+Squared error of a sigmoid can be minimised — it is not “impossible”. It just lacks the likelihood justification and the convexity that make log loss the natural choice. Conversely, binary labels do not make every least-squares calculation invalid; the model, objective and interpretation must simply match.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+For an observation with y = 0, which factor of p^y (1 − p)^(1−y) survives?
+
+<Option>p <Why>p⁰ = 1; p is the probability of class 1.</Why></Option>
+<Option correct>1 − p <Why>With y = 0, the exponent of (1 − p) is 1 and the exponent of p is 0.</Why></Option>
+<Option>p(1 − p) <Why>That is the sigmoid’s derivative, not the Bernoulli probability.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Where does the independence assumption enter the derivation of log loss?
+
+<Option correct>In writing the joint likelihood as a product of per-observation probabilities. <Why>Exactly as in Week 1’s Gaussian derivation.</Why></Option>
+<Option>In taking the logarithm. <Why>The log is valid for any positive likelihood.</Why></Option>
+<Option>In choosing the sigmoid. <Why>The sigmoid is the model for pⱼ; independence concerns how observations combine.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Two models classify every training point correctly at threshold ½. Model A assigns probability 0.99 to each true label, model B 0.6. Which has lower log loss?
+
+<Option>Same — accuracy is equal. <Why>Accuracy ignores how confident a correct prediction is; log loss does not.</Why></Option>
+<Option correct>A: about 0.010 per observation vs about 0.511 for B. <Why>−log 0.99 ≈ 0.010 and −log 0.6 ≈ 0.511.</Why></Option>
+<Option>B, because it is less overconfident. <Why>On these training labels, higher probability on the true label always lowers log loss.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A binary label given $\bx$ is Bernoulli with probability $p = \sigma(\bxt\T\beta)$, so $P(y \mid \bx) = p^y(1 - p)^{1-y}$. Independence makes the likelihood a product; its negative average log is the log loss $J(\beta) = -\frac1m\sum_j[y_j\log p_j + (1 - y_j)\log(1 - p_j)]$, which charges $-\log$ of the probability given to the true label.
+</Callout>

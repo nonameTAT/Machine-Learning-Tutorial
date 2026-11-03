@@ -1,25 +1,25 @@
 import { defineWeek } from '../../course/types';
-import Overview from './Overview';
-import Reference from './Reference';
-import practice from './practice';
-import Classifier from './lessons/Classifier';
-import Centroid from './lessons/Centroid';
-import Sigmoid from './lessons/Sigmoid';
-import LogLoss from './lessons/LogLoss';
-import LogFit from './lessons/LogFit';
-import CV from './lessons/CV';
-import DataTypes from './lessons/DataTypes';
-import Metrics from './lessons/Metrics';
-import ROC from './lessons/ROC';
-import Missing from './lessons/Missing';
-import Distance from './lessons/Distance';
-import Metric from './lessons/Metric';
-import Exemplar from './lessons/Exemplar';
-import KNN from './lessons/KNN';
-import Scaling from './lessons/Scaling';
-import Weighted from './lessons/Weighted';
-import LazyEval from './lessons/LazyEval';
-import Curse from './lessons/Curse';
+import Overview from './Overview.mdx';
+import Reference from './Reference.mdx';
+import Practice, { blurb, groups } from './practice.mdx';
+import Classifier from './lessons/Classifier.mdx';
+import Centroid from './lessons/Centroid.mdx';
+import Sigmoid from './lessons/Sigmoid.mdx';
+import LogLoss from './lessons/LogLoss.mdx';
+import LogFit from './lessons/LogFit.mdx';
+import CV from './lessons/CV.mdx';
+import DataTypes from './lessons/DataTypes.mdx';
+import Metrics from './lessons/Metrics.mdx';
+import ROC from './lessons/ROC.mdx';
+import Missing from './lessons/Missing.mdx';
+import Distance from './lessons/Distance.mdx';
+import Metric from './lessons/Metric.mdx';
+import Exemplar from './lessons/Exemplar.mdx';
+import KNN from './lessons/KNN.mdx';
+import Scaling from './lessons/Scaling.mdx';
+import Weighted from './lessons/Weighted.mdx';
+import LazyEval from './lessons/LazyEval.mdx';
+import Curse from './lessons/Curse.mdx';
 
 export default defineWeek({
   n: 2,
@@ -274,7 +274,7 @@ export default defineWeek({
       ],
     },
   ],
-  practice,
+  practice: { blurb, groups, page: Practice },
   reference: Reference,
   readiness: {
     items: [

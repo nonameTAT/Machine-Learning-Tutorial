@@ -9,7 +9,7 @@ reference sheet and a readiness check. Back to the [README](../README.md).
 descent, maximum likelihood, assumptions, polynomial/indicator features, ridge & LASSO, validation & metrics,
 k-NN/local regression, bias–variance.
 
-**Labs** (SVG; Plotly only for the 3-D views) include a residual playground, squared versus absolute error with a
+**Labs** (SVG; three.js for the 3-D views: least squares as a projection in ℝ³, the plane fit and the loss bowl) include a residual playground, squared versus absolute error with a
 draggable outlier, covariance as signed areas, an OLS calculator, gradient descent on loss contours, regularisation
 paths, and a bias–variance simulation.
 

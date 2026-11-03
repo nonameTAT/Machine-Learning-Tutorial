@@ -1,0 +1,91 @@
+import { BiasLab } from '../labs/BiasLab';
+
+## The observations do not determine the unseen cases
+
+“All models are wrong, but some models are useful” (Box & Draper). Here is why a learner cannot avoid being “wrong” in some respect. Suppose the only observations are $(0, 0)$ and $(1, 1)$. Both
+
+$$
+f(x) = x \qquad\text{and}\qquad g(x) = x + 10x(x - 1)
+$$
+
+fit them perfectly, yet at $x = 2$ they predict 2 and 22. Training agreement alone cannot tell us which extrapolation is sensible. To say anything about unseen inputs a learner must prefer some patterns over others.
+
+<Lab title="Perfect fits that disagree" purpose="Three hypotheses, all with zero training error. Move the new input and compare their predictions.">
+<BiasLab />
+</Lab>
+
+<TryThis>
+1. At x = 2 with a = 10 the three hypotheses predict 2, 22 and 1. Which is “right”? Nothing in the two observations can say.
+2. Observe (2, 2) as well. Only a = 0 survives in the g-family — but 1-NN and many other curves still fit. More data narrows the candidates without ever fixing them completely.
+</TryThis>
+
+## Inductive bias
+
+**Inductive bias** is the set of assumptions a model or learning algorithm uses to generalise from the training data to new, unseen data. It includes the hypothesis family, what counts as “similar”, and preferences among competing fits. A good inductive bias — one that matches the real structure of the problem — can dramatically reduce how much data is needed. For complex models it is often hard to state.
+
+| Method | Central inductive bias |
+| --- | --- |
+| Linear regression | the target is well approximated by a linear function of the chosen features; squared errors decide the fit |
+| k-nearest neighbours | nearby points (under the chosen distance and scaling) tend to have similar labels — local similarity |
+| Naive Bayes (this week) | features are mutually independent once the class is known, each with a chosen distribution |
+
+<p className="small muted">k-NN’s bias is sometimes described as “the target is a complex non-linear function”. k-NN can produce non-linear boundaries, but its central assumption is local similarity.</p>
+
+<Callout kind="warning" title="Two meanings of “bias”">
+*Inductive* bias means assumptions. *Statistical* bias (Week 1’s bias–variance decomposition) means systematic error in an estimator. They are related — strong assumptions such as linearity tend to give high bias and low variance — but a strong inductive bias that *matches* the problem need not create large statistical bias. “Stronger assumptions always mean higher error” is false.
+</Callout>
+
+## A probabilistic framework
+
+We want a framework that represents the inductive bias explicitly and declaratively, and quantifies uncertainty. Probability does this. For example, with two Boolean features of an email and the class $Y \in \{\text{spam}, \text{ham}\}$:
+
+<Table
+          head={['Viagra', 'lottery', 'P(spam | x)', 'P(ham | x)']}
+          rows={[
+            ['0', '0', '0.31', <strong>0.69</strong>],
+            ['0', '1', <strong>0.65</strong>, '0.35'],
+            ['1', '0', <strong>0.80</strong>, '0.20'],
+            ['1', '1', '0.40', <strong>0.60</strong>],
+          ]}
+        />
+
+A **decision rule** turns this posterior into a prediction — e.g. predict spam when $P(\text{spam} \mid x) > 0.5$. Bayesian methods play two roles: practical algorithms (Naive Bayes, Bayesian networks) that combine prior knowledge with data, and a conceptual “gold standard” for judging other learners. This table returns in lessons 16 and 17.
+
+## Discriminative and generative models
+
+A **discriminative** probabilistic model learns $P(y \mid x)$ directly — logistic regression from Week 2. A **generative** model learns $P(y)$ and $P(x \mid y)$, hence the joint $P(x, y) = P(x \mid y)P(y)$, and obtains the posterior from it:
+
+$$
+P(y \mid x) = \frac{P(x, y)}{\sum_{c} P(x, Y = c)}.
+$$
+
+It is called generative because you could *generate* labelled data: sample a class from $P(y)$, then features from $P(x \mid y)$. Naive Bayes is generative. The distinction concerns *what is modelled*, not whether the boundary looks straight.
+
+## Check your understanding
+
+<Quiz id="q1">
+“k-NN has no inductive bias because it does not fit a formula.” Evaluate.
+
+<Option>True: it just stores the data. <Why>Storing data does not generalise; the assumption that nearby points share labels does.</Why></Option>
+<Option correct>False: it assumes local similarity under the chosen distance and feature scaling. <Why>Change the distance and you change what it believes about unseen points.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Which statement about inductive and statistical bias is correct?
+
+<Option>They are the same thing. <Why>Inductive bias is not the bias of the bias–variance decomposition.</Why></Option>
+<Option>Strong inductive bias always causes large statistical bias. <Why>Not if the assumptions match the true problem.</Why></Option>
+<Option correct>Inductive bias is a set of assumptions; it influences, but does not equal, the systematic error. <Why>Correct assumptions can give low variance without high bias.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+What does a generative classifier model?
+
+<Option>P(y | x) only <Why>That is a discriminative model.</Why></Option>
+<Option correct>P(x | y) and P(y), i.e. the joint P(x, y) <Why>Bayes’ rule then gives P(y | x).</Why></Option>
+<Option>Only the decision boundary <Why>A boundary-only rule is discriminative.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Finite data are consistent with many hypotheses, so every learner needs an inductive bias — assumptions that pick out plausible generalisations. Linear regression assumes linearity, k-NN assumes local similarity, Naive Bayes assumes conditional independence. The probabilistic framework makes such assumptions explicit and quantifies uncertainty; generative models learn $P(x \mid y)P(y)$ and use Bayes’ rule.
+</Callout>

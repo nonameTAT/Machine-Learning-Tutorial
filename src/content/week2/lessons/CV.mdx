@@ -1,0 +1,145 @@
+import { CVSelectLab, FoldLab } from '../labs/CVLab';
+import { LeakageLab } from '../labs/LeakageLab';
+
+## The target is performance beyond the sample
+
+Generalisation is how well a trained model classifies or forecasts *unseen* data. For example, a dog-vs-cat classifier trained on only two breeds of dog may score well in training and badly on other breeds. Nothing in the training error warns you.
+
+To learn anything general from a sample, we make three assumptions:
+
+1. examples are drawn **independently and identically distributed** (i.i.d.) from a distribution;
+2. the distribution is **stationary** — it does not change within the data;
+3. training, validation and test samples all come from the **same distribution**.
+
+In practice these are sometimes violated. A random split cannot repair an unrepresentative source dataset, and it cannot promise success after the world changes.
+
+## Three roles, three kinds of data
+
+| Data | Allowed to influence | Examples |
+| --- | --- | --- |
+| Training | the fitted quantities | logistic coefficients β; the class means; the stored examples of k-NN |
+| Validation (development) | choices made before the final fit — hyperparameters and model selection | k, the threshold τ, the feature set, regularisation strength |
+| Test | nothing — it measures the final chosen procedure once | the number you report |
+
+<Callout kind="warning">
+Coefficients and hyperparameters are different kinds of “parameter”. If you try thirty values of k and report the best *test* error, the test set has been used for selection and the reported number is optimistic (Week 1, lesson 11).
+</Callout>
+
+## Ways to split the available data
+
+| Method | What happens | Trade-off |
+| --- | --- | --- |
+| Holdout | fit on one subset, evaluate on a separate one | simple and cheap; the estimate depends on that one split |
+| $K$-fold CV | partition into $K$ folds; each fold is held out once while the others train | $K$ fits; every observation is validated exactly once |
+| Leave-one-out (LOOCV) | hold out one observation at a time: $K = m$ | nearly all data trains each fit; $m$ fits can be costly |
+
+With equal folds, each $K$-fold fit trains on and validates on
+
+$$
+\frac{m(K - 1)}{K} \text{ observations} \quad\text{and}\quad \frac mK \text{ observations.}
+$$
+
+The key property: an observation is only ever predicted by a model that *did not train on it*. When CV is used for tuning, its held-out folds play the role of **validation**, even if a diagram labels them “test”.
+
+<Lab title="Who trains, who validates" purpose="Each row is one fit. The reserved test set (grey) never takes part.">
+<FoldLab />
+</Lab>
+
+## Choosing a hyperparameter with cross-validation
+
+<Callout kind="example" title="Three folds by hand">
+Twelve development observations in three folds of four. Validation mistakes:
+
+| candidate | fold 1 | fold 2 | fold 3 | overall |
+| --- | --- | --- | --- | --- |
+| k = 1 | 1 | 2 | 1 | 4/12 = 1/3 |
+| k = 3 | 1 | 0 | 2 | 3/12 = 1/4 |
+
+Choose $k = 3$. With equal fold sizes the mean of the fold error rates equals total mistakes / total held out. With unequal folds, weight by fold size if the target is the error over all held-out observations.
+</Callout>
+
+<Lab title="Choose k for k-NN by K-fold cross-validation" purpose="The CV error picks k. The last column (error on fresh data from the same distribution) is what CV is trying to estimate.">
+<CVSelectLab />
+</Lab>
+
+<TryThis>
+1. Compare the CV error column with the fresh-data column. CV is an estimate: close, but not equal.
+2. Press “Reshuffle the folds” several times. The CV errors — and sometimes the chosen k — change. This is the variability of a CV estimate.
+3. Set K = 2: each fit trains on only 15 points. Set K = 10: each trains on 27. Which better resembles training on all 30?
+4. Is k = 1 ever chosen? Look at its fresh-data error.
+</TryThis>
+
+## Apply the split to the whole procedure
+
+<div className="pipeline">
+<div className="pipe-step">
+<div className="pipe-t">1. Reserve a test set</div>
+
+<div className="pipe-s">untouched until the end</div>
+</div>
+
+<div className="pipe-step prep">
+<div className="pipe-t">2. Inside each CV split</div>
+
+<div className="pipe-s">fit imputation, scaling and the classifier on that split’s training part only; apply to its validation fold</div>
+</div>
+
+<div className="pipe-step">
+<div className="pipe-t">3. Choose the setting</div>
+
+<div className="pipe-s">from validation results</div>
+</div>
+
+<div className="pipe-step">
+<div className="pipe-t">4. Refit, then test once</div>
+
+<div className="pipe-s">refit the chosen procedure on all development data; evaluate on the test set</div>
+</div>
+</div>
+
+<Callout kind="warning" title="Leakage without labels is still leakage">
+Fitting a scaler or an imputer on *all* observations before cross-validation lets the validation folds influence the fitted procedure — even though no labels were used. Cross-validation does not fix that, nor does it fix repeatedly peeking at the test set to choose k.
+</Callout>
+
+When the leaked step uses the labels, the damage can be dramatic. A classic trap: choose the features that look most predictive using *all* the data, then cross-validate only the classifier. The validation folds have already helped choose the features, so the estimate is no longer about unseen data. Feature selection is part of the procedure and must be redone inside every fold.
+
+<Lab title="Feature selection outside versus inside the folds" purpose="Twenty datasets in which the labels are assigned at random, so no method can beat 50%. Each is cross-validated twice: once with features selected before CV, once with selection repeated inside every fold.">
+<LeakageLab />
+</Lab>
+
+<TryThis>
+1. With 1000 noise features and 20 kept, selecting outside the folds reports over 90% accuracy on labels that are pure chance. Inside the folds it reports about 50% — the truth.
+2. Reduce the number of noise features. The leak shrinks, because there are fewer chance correlations to find, but it does not vanish.
+3. The honest estimates scatter widely around 0.5 from dataset to dataset: a cross-validation estimate from 50 examples has a lot of variance.
+</TryThis>
+
+Finally, the best CV score among many candidates is itself a result of selection, so it tends to be optimistic. That is why the separate test set answers the final evaluation question.
+
+## Check your understanding
+
+<Quiz id="q1">
+With m = 100 and 5-fold CV, how many observations train each fit, and how many fits are run?
+
+<Option correct>80 per fit, 5 fits <Why>m(K − 1)/K = 80; one fit per fold.</Why></Option>
+<Option>20 per fit, 5 fits <Why>20 is the validation fold size.</Why></Option>
+<Option>99 per fit, 100 fits <Why>That is LOOCV (K = m).</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+“I standardised all features using the whole dataset, then ran 10-fold CV. No labels were used, so there is no leakage.” Evaluate.
+
+<Option>Correct: leakage needs labels. <Why>The held-out inputs still shaped the fitted means and standard deviations.</Why></Option>
+<Option correct>Wrong: the scaling statistics must be fitted on each fold’s training part and then applied to its validation fold. <Why>Every fitted step of the procedure belongs inside the fold.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Which data should choose the decision threshold τ for a logistic model?
+
+<Option>The training data, together with β. <Why>Tuning τ on the data that fitted β tends to overfit the choice.</Why></Option>
+<Option correct>Validation data (or CV folds). <Why>τ is a modelling choice, like k: choose it on validation data, then test once.</Why></Option>
+<Option>The test data, since τ is not a coefficient. <Why>Anything chosen on the test set makes the test result optimistic.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Generalisation is performance on new data from the same distribution. Training fits coefficients, validation (holdout or $K$-fold CV, with LOOCV as $K = m$) chooses settings, and an untouched test set measures the final procedure once. Every fitted step — including preprocessing — must be fitted on the training portion only.
+</Callout>

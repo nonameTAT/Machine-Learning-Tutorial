@@ -1,0 +1,115 @@
+import { JointVsProductLab, ParamCountLab } from '../labs/IndependenceLab';
+
+## The practical obstacle
+
+Naive Bayes is, along with decision trees, neural networks and nearest neighbour, one of the most practical learning methods. It applies the MAP rule to an instance described by attributes $\langle x_1, \dots, x_d\rangle$:
+
+$$
+v_{\text{MAP}} = \argmax_{v_j\in V} P(v_j \mid x_1, \dots, x_d) = \argmax_{v_j\in V} P(x_1, \dots, x_d \mid v_j)\,P(v_j).
+$$
+
+Estimating $P(v_j)$ is easy: count. Estimating $P(x_1, \dots, x_d \mid v_j)$ is not. The number of possible feature combinations explodes, and most of them never appear in the training data, so their probabilities cannot be counted.
+
+<Lab title="How big is the full table?" purpose="Count the probabilities a full class-conditional table needs, compared with Naive Bayes.">
+<ParamCountLab />
+</Lab>
+
+## The Naive Bayes assumption
+
+Replace the large joint table with one small distribution per feature and class:
+
+$$
+P(x_1, \dots, x_d \mid v_j) = \prod_{i=1}^d P(x_i \mid v_j).
+$$
+
+Attributes are assumed statistically independent *given the class*: once the class is known, the value of one attribute tells us nothing about another. This is a **modelling assumption**, not a consequence of Bayes’ theorem.
+
+<Steps>
+What does the assumption actually replace? Look at two features.
+
+<Step title="The exact chain rule">
+$$
+P(x_1, x_2 \mid c) = P(x_1 \mid c)\,P(x_2 \mid x_1, c).
+$$
+</Step>
+
+<Step title="The assumption">
+$$
+P(x_2 \mid x_1, c) = P(x_2 \mid c)\;\Longrightarrow\; P(x_1, x_2 \mid c) = P(x_1 \mid c)\,P(x_2 \mid c).
+$$
+
+Knowing feature 1 does not change the distribution of feature 2 within the class.
+</Step>
+
+<Step title="Many features">
+The full product needs *mutual* conditional independence of all features given the class — not merely independence of each pair.
+</Step>
+</Steps>
+
+<Callout kind="warning" title="Three different “independences”">
+- **Conditional** (what NB assumes): independent *within* each class.
+- **Marginal**: independent overall. Features can be associated overall while independent within each class — two words both common in spam and rare in ham become associated once the classes are mixed.
+- **Independent of the class**: that would mean the feature carries no information about the class at all — the opposite of what we want.
+</Callout>
+
+<Lab title="True joint versus the Naive Bayes product" purpose="Within one class: set the two marginals and how dependent the features are. Each cell shows the true probability and NB’s product.">
+<JointVsProductLab />
+</Lab>
+
+<TryThis>
+1. At “independent”, NB is exact: every cell equals the product of its marginals.
+2. Push the dependence to maximal + with equal marginals: the features become identical copies, and NB badly misjudges how often both are 1.
+3. Note what NB still gets right: each feature’s own probability. What it loses is the interaction.
+</TryThis>
+
+## The classifier, and how to train it
+
+Substitute the assumption into the MAP rule:
+
+$$
+\boxed{\;v_{\text{NB}} = \argmax_{v_j\in V}\; \hat P(v_j)\prod_{i} \hat P(x_i \mid v_j)\;}
+$$
+
+For fully observed categorical data the estimates are counts:
+
+$$
+\hat P(c) = \frac{N_c}{N}, \qquad \hat P(X_j = v \mid c) = \frac{N_{j,v,c}}{N_c},
+$$
+
+where $N_{j,v,c}$ counts class-$c$ examples with feature $j$ equal to $v$. Training is counting; prediction is multiplying the relevant factors and comparing the class scores.
+
+<Callout kind="note" title="Where the savings come from">
+With $d$ binary features, a full table needs $2^d - 1$ free probabilities per class; Naive Bayes needs $d$. Fewer parameters mean less estimation noise — at the cost of discarding interactions.
+</Callout>
+
+<Callout kind="intuition" title="Why it often works anyway">
+The assumption is often violated, yet NB works surprisingly well. For classification you do not need the estimated posteriors to be right — only that the correct class gets the largest score. But NB posteriors are often unrealistically close to 0 or 1, and redundant (e.g. identical) attributes cause problems. Lesson 17 returns to this.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+“Naive Bayes assumes the features are independent of the class.” Evaluate.
+
+<Option>True. <Why>Then the features would carry no information about the class.</Why></Option>
+<Option correct>False: it assumes the features are (mutually) independent of each other given the class. <Why>Conditional independence, not independence from Y.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Two identical, non-constant binary features. Do they satisfy the Naive Bayes assumption within a class?
+
+<Option>Yes, they have the same distribution. <Why>Same distribution is not independence.</Why></Option>
+<Option correct>No: knowing one reveals the other exactly. <Why>P(x₂ | x₁, c) is 0 or 1, not P(x₂ | c).</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+With 10 binary features and 2 classes, how many free class-conditional probabilities does Naive Bayes estimate?
+
+<Option correct>20 <Why>d = 10 per class, two classes.</Why></Option>
+<Option>2046 <Why>That is the full table: 2 × (2¹⁰ − 1).</Why></Option>
+<Option>10 <Why>Each class needs its own set.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+The full likelihood $P(x_1, \dots, x_d \mid c)$ is unlearnable for many features. Naive Bayes assumes the features are mutually independent given the class, so the likelihood factorises: $\hat v = \argmax_c \hat P(c)\prod_j \hat P(x_j \mid c)$, estimated by counting within each class.
+</Callout>

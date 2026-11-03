@@ -1,0 +1,130 @@
+import { BiasVarianceLab, Dartboards } from '../labs/BiasVarLab';
+
+## The puzzle
+
+Lessons 9–12 kept meeting the same pattern: a more flexible model (higher degree, smaller λ, smaller k) fits the training data better, yet past some point predicts new data worse. There are three regimes — **underfitting** (too simple to capture the truth), **good fit**, and **overfitting** (chasing noise). Why does extra flexibility eventually hurt? The answer is to stop thinking about the one model you fitted and imagine *all the models you could have fitted*.
+
+## Imagine repeating the whole training process
+
+Your training set is one random draw. Fix a query input $x$. Draw a fresh training set $D$, fit the same procedure, and record the prediction $\hat f_D(x)$. Repeat many times. Two different things can go wrong:
+
+- **Bias** — the *average* prediction is in the wrong place: $\Bias(x) = \E_D[\hat f_D(x)] - f(x)$. A high-bias model pays little attention to the data and oversimplifies; it errs on training and test data alike.
+- **Variance** — predictions scatter from one training set to the next: $\Var_D(\hat f_D(x)) = \E_D\big[(\hat f_D(x) - \E_D[\hat f_D(x)])^2\big]$. A high-variance model pays a lot of attention to its particular training data, does very well on it, and generalises poorly.
+
+{<Figure caption="Each dart is the prediction from one training set; the bull’s-eye is the truth f(x). Bias is where the cluster is centred; variance is how spread out it is.">
+          <Dartboards />
+        </Figure>}
+
+<Callout kind="warning">
+The variance here is across *training sets* at a *fixed input*. It is not the spread of the raw y values, and not how much one model’s predictions vary across different x’s.
+</Callout>
+
+In these terms: **underfitting** typically means high bias and low variance; **overfitting** means the model has captured the noise along with the pattern — low bias, high variance.
+
+## The decomposition
+
+Assume $y = f(x) + \varepsilon$ with $\E[\varepsilon] = 0$, $\Var(\varepsilon) = \sigma^2$, and the test noise independent of the training data. Then the expected squared error of a new prediction at $x$ splits into three parts:
+
+$$
+\E\big[(y - \hat f(x))^2\big] = \underbrace{\big(f(x) - \E[\hat f(x)]\big)^2}_{\cbias{\Bias^2}} + \underbrace{\Var\big(\hat f(x)\big)}_{\cvar{\text{variance}}} + \underbrace{\Var(\varepsilon)}_{\cnoise{\text{irreducible error}}}.
+$$
+
+<Steps>
+Derive it rather than memorise it. Write $a = \E_D[\hat f_D(x)]$ for the average prediction.
+
+<Step title="Add and subtract the average prediction">
+$$
+y - \hat f_D = \underbrace{(f - a)}_{\text{fixed}} + \underbrace{(a - \hat f_D)}_{\text{mean } 0 \text{ over } D} + \underbrace{\varepsilon}_{\text{mean } 0}.
+$$
+</Step>
+
+<Step title="Square and take expectations">
+$$
+\E[(y - \hat f_D)^2] = (f-a)^2 + \E[(a - \hat f_D)^2] + \E[\varepsilon^2] + 2\,\text{(cross terms)}.
+$$
+</Step>
+
+<Step title="The cross terms vanish">
+$$
+\begin{aligned} 2(f-a)\,\E[a - \hat f_D] &= 0, \\ 2(f-a)\,\E[\varepsilon] &= 0, \\ 2\,\E[(a - \hat f_D)\varepsilon] &= 2\,\E[a - \hat f_D]\,\E[\varepsilon] = 0. \end{aligned}
+$$
+
+The last uses independence between the test noise and the training set.
+</Step>
+
+<Step title="Read off the three terms">
+$$
+\E[(y - \hat f_D(x))^2] = \Bias(x)^2 + \Var_D(\hat f_D(x)) + \sigma^2.
+$$
+</Step>
+</Steps>
+
+- **Irreducible error** $\sigma^2$ is the inherent noise in the system: unknown factors or chance. No model can remove it.
+- **Reducible error** — bias² plus variance — can and should be reduced by adjusting the model.
+
+<Callout kind="note">
+If you measure error against the noiseless target $f(x)$ instead of a new noisy $y$, the $\sigma^2$ term disappears: $\E[(\hat f - f)^2] = \Bias^2 + \Var$. That two-term version is the MSE of an *estimator*.
+</Callout>
+
+## Make it concrete
+
+Suppose $f(x) = 10$ and noise variance is 1. Procedure A’s predictions across training sets are 8, 10, 12 with equal probability: average 10, so bias 0; variance $(4 + 0 + 4)/3 = 8/3$; expected error $0 + 8/3 + 1 = 11/3 \approx 3.67$. Procedure B always predicts 9: bias −1, variance 0, expected error $1 + 0 + 1 = 2$.
+
+**The biased procedure wins.** When comparing unbiased estimators we prefer the one with minimum variance, but in general we compare estimators with some bias and some variance, and a little bias can buy a lot less variance. That is exactly what regularisation does.
+
+## Watch the tradeoff happen
+
+<Lab title="Bias and variance by simulation" purpose="Truth: sin(2πx) plus Gaussian noise with σ = 0.4. Every training set uses the same 10 equally spaced inputs with freshly drawn noise. Add training sets and vary the degree; the decomposition at x₀ is estimated from the fits you have drawn, and the bottom chart is computed exactly.">
+<BiasVarianceLab />
+</Lab>
+
+<TryThis>
+1. Degree 0 or 1: the fits barely move between training sets (low variance), but their average misses the sine wave (high bias).
+2. Degree 9: ten coefficients for ten points, so every fit passes through its own noisy data. The average fit is close to the truth (low bias), but individual fits swing wildly, especially near the edges (high variance).
+3. Add more training sets at a fixed degree. The estimates of bias² and variance stabilise — they are properties of the procedure, not of one fit.
+4. In the bottom chart, find the degree that minimises expected test error. Bias falls and variance rises with degree; their sum is U-shaped, sitting on the noise floor.
+5. Move x₀ to the edges at high degree: variance is largest where data are sparse and the polynomial is least constrained.
+</TryThis>
+
+## Finding the balance in practice
+
+| To increase flexibility (↓ bias, ↑ variance) | To decrease flexibility (↑ bias, ↓ variance) |
+| --- | --- |
+| higher polynomial degree / more features | lower degree / fewer features |
+| smaller ridge or LASSO λ | larger λ |
+| smaller k in k-NN | larger k |
+
+These are tendencies, not guaranteed monotone laws for every dataset. And since $f$ is unknown, there is no formula that tells you the balance point. Instead, estimate total error on **unseen validation data** and adjust the model’s complexity until it is minimised — precisely the protocol of lesson 11.
+
+<Callout kind="intuition">
+A common diagnostic: high training *and* validation error → likely high bias (underfit; add flexibility). Low training error but much higher validation error → likely high variance (overfit; regularise, simplify, or get more data). More data reduces variance; it does not fix bias from a too-simple model.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+At a fixed input, procedure A predicts 4 or 8 with equal probability; B always predicts 5. The truth is 6 and noise variance is 2. Which has lower expected squared prediction error?
+
+<Option>A, because it is unbiased. <Why>A: bias 0, variance 4, total 0 + 4 + 2 = 6.</Why></Option>
+<Option correct>B, despite being biased. <Why>B: bias −1, variance 0, total 1 + 0 + 2 = 3 \< 6. Unbiasedness alone is not enough.</Why></Option>
+<Option>They are equal. <Why>Compute each: 6 vs 3.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+A model’s average prediction over all *inputs* equals the average target. Does it have zero bias in the bias–variance sense?
+
+<Option>Yes. <Why>Bias is defined at a fixed input, averaging over training sets. Positive and negative errors at different x can cancel in an input-average.</Why></Option>
+<Option correct>Not necessarily. <Why>A flat line at ȳ fitted to a sine wave has this property and is heavily biased at most x.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Collecting much more training data (same model) mainly reduces…
+
+<Option>bias <Why>A too-simple model stays too simple however much data you give it.</Why></Option>
+<Option correct>variance <Why>With more data each fit depends less on the particular sample.</Why></Option>
+<Option>irreducible error <Why>σ² is a property of the data-generating process; no model or dataset size removes it.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Imagine retraining on many datasets. Bias is how far the average prediction is from the truth; variance is how much predictions scatter between datasets. Expected squared error = bias² + variance + irreducible noise. Flexibility trades bias for variance, so the best model is the one with the smallest *sum*, found in practice with validation data — not the one that fits the training data best.
+</Callout>

@@ -1,6 +1,6 @@
 import { defineWeek } from '../../course/types';
-import ExampleLesson from './lessons/ExampleLesson';
-import practice from './practice';
+import ExampleLesson from './lessons/ExampleLesson.mdx';
+import Practice, { blurb, groups } from './practice.mdx';
 
 // Starter for a new week. Copy this folder to src/content/week<N>/ and it appears in the site:
 // folders named week* are discovered automatically (see src/content/index.ts). This folder itself
@@ -28,7 +28,7 @@ export default defineWeek({
       ],
     },
   ],
-  practice, // optional
+  practice: { blurb, groups, page: Practice }, // optional
   // reference: Reference,   // optional printable formula sheet (see week3/Reference.tsx)
   readiness: {
     items: ['One thing a student should be able to do, without notes, at the end of the week.'],

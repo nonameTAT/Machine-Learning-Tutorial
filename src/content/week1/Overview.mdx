@@ -1,0 +1,37 @@
+import { LearningArc, StudyRoute } from '../../course/overview';
+
+## How this guide teaches
+
+Each lesson follows the same arc, because understanding comes in that order:
+
+<LearningArc />
+
+How to study a lesson:
+
+1. Read a lesson once for the story. Do the “Try this” experiments — they are where intuition is built.
+2. Close the page and explain the central idea out loud. Reconstruct the key derivation on paper.
+3. Answer the checks; read the explanation for the wrong options too.
+4. Tick the “Can you do these without looking?” list honestly, then mark the lesson as understood. Write notes or questions for your tutor in the notes box at the bottom of every page.
+5. Attempt the [practice problems](#/practice) before opening their solutions; use the [reference sheet](#/reference) only once you can derive what is on it.
+
+<Callout kind="note" title="Notation used throughout">
+$m$ = number of training examples, $n$ = number of features *excluding* the intercept, $\bx_j$ = the $j$-th input with a leading 1, $X$ = the $m\times(n+1)$ design matrix, $\theta$ = parameters, $e_j = y_j - \hat y_j$ = residual.
+</Callout>
+
+<StudyRoute />
+
+## What is machine learning?
+
+<blockquote className="quote">“The field of machine learning is concerned with the question of how to construct computer programs that automatically improve from experience.” <span className="muted">— T. Mitchell, *Machine Learning* (1997)</span></blockquote>
+
+<blockquote className="quote">“The term machine learning refers to the automated detection of meaningful patterns in data.” <span className="muted">— Shalev-Shwartz & Ben-David, *Understanding Machine Learning* (2014)</span></blockquote>
+
+<blockquote className="quote">“Data mining is the extraction of implicit, previously unknown, and potentially useful information from data.” <span className="muted">— I. Witten et al., *Data Mining* (2016)</span></blockquote>
+
+Typical applications: image classification and object detection, spam filtering, speech recognition, event detection, recommender systems, human-behaviour recognition, medical diagnosis.
+
+## Reading the charts
+
+<div className="legend" style={{ fontSize: 14, gap: '8px 20px' }}><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-data)' }} /> data</span><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-fit)' }} /> fitted model</span><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-res)' }} /> residuals / errors / current point</span><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-alt)' }} /> comparison model / validation data</span><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-pen)' }} /> penalty / likelihood</span><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-bias)' }} /> bias</span><span className="legend-item"><span className="swatch" style={{ background: 'var(--c-var)' }} /> variance</span></div>
+
+<p className="small muted">Dashed dark curves are the true (normally unknown) mean function in simulated data. The same colours are used in formulas, e.g. $\cres{e_j}$, $\cbias{\Bias^2}$, $\cvar{\text{variance}}$.</p>

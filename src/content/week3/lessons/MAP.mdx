@@ -1,0 +1,93 @@
+import { OddsLab } from '../labs/OddsLab';
+
+## Choosing a hypothesis
+
+Apply Bayes’ theorem to *models*. A hypothesis $h$ from a hypothesis space $H$ is a candidate explanation of the training data $D$. We generally want the most probable hypothesis given the data — the **maximum a posteriori** (MAP) hypothesis:
+
+$$
+h_{\text{MAP}} = \argmax_{h\in H} P(h \mid D) = \argmax_{h\in H}\frac{P(D \mid h)P(h)}{P(D)} = \argmax_{h\in H} P(D \mid h)\,P(h).
+$$
+
+$P(D)$ is the same for every hypothesis, so it drops out of the argmax. If every hypothesis is equally probable a priori, $P(h)$ drops out too and we get the **maximum likelihood** (ML) hypothesis:
+
+$$
+h_{\text{ML}} = \argmax_{h\in H} P(D \mid h).
+$$
+
+With equal priors MAP and ML coincide; unequal priors *can* change the answer (though they need not). The same logic at the level of classes gives MAP classification $\argmax_c P(x \mid c)P(c)$ and ML classification $\argmax_c P(x \mid c)$. Selecting a model and selecting a class are different tasks — lesson 7 shows they can disagree.
+
+<Callout kind="example" title="ML and MAP disagree">
+Priors $P(h_1) = 0.9$, $P(h_2) = 0.1$; likelihoods $P(D \mid h_1) = 0.2$, $P(D \mid h_2) = 0.8$. ML picks $h_2$ (0.8 > 0.2). MAP compares $0.2 \times 0.9 = 0.18$ with $0.8 \times 0.1 = 0.08$ and picks $h_1$; normalising, $P(h_1 \mid D) = 9/13$. The data favour $h_2$, but not strongly enough to overcome its small prior.
+</Callout>
+
+## Odds make the update visible
+
+<Steps>
+For two classes, divide one Bayes formula by the other.
+
+<Step title="Write both posteriors">
+$$
+P(c_1 \mid x) = \frac{P(x \mid c_1)P(c_1)}{P(x)}, \qquad P(c_2 \mid x) = \frac{P(x \mid c_2)P(c_2)}{P(x)}.
+$$
+</Step>
+
+<Step title="Divide: the evidence cancels">
+$$
+\underbrace{\frac{P(c_1 \mid x)}{P(c_2 \mid x)}}_{\text{posterior odds}} = \underbrace{\frac{P(x \mid c_1)}{P(x \mid c_2)}}_{\text{likelihood ratio}} \times \underbrace{\frac{P(c_1)}{P(c_2)}}_{\text{prior odds}}.
+$$
+</Step>
+
+<Step title="Back to a probability">
+Odds $o$ mean “$o$ times as probable”, not probability $o$. For two exhaustive classes, $P(c_1 \mid x) = o/(1 + o)$.
+</Step>
+</Steps>
+
+It helps to think of likelihoods as thought experiments: if someone sent me a spam email, how likely would it be to contain exactly these words — and how likely if it were ham? What matters is their *ratio*. Use likelihoods alone when you want to ignore the prior (or assume it uniform), and posteriors otherwise.
+
+<Callout kind="example" title="Text example">
+A Bernoulli model (lesson 14) gives likelihood ratio $3/2$ for spam versus ham. With equal priors, predict spam. With 1/3 spam and 2/3 ham, the prior odds are $1/2$ and the posterior odds $\tfrac32 \times \tfrac12 = \tfrac34 < 1$: predict ham, with spam posterior $(3/4)/(1 + 3/4) = 3/7$. The likelihood ratio was not strong enough to push the decision away from the prior.
+</Callout>
+
+<Callout kind="note" title="When is the threshold 1?">
+Under equal error costs, posterior odds above 1 favour $c_1$. A likelihood ratio above 1 gives the ML decision; it gives the MAP decision only with equal priors. In general, compare the likelihood ratio with $P(c_2)/P(c_1)$.
+</Callout>
+
+<Lab title="Bayes’ rule as addition of log-odds" purpose="On a log scale, multiplying by the likelihood ratio is a shift. Start at the prior odds, shift by the evidence, and see which side you land on.">
+<OddsLab />
+</Lab>
+
+<TryThis>
+1. Load “h₁ vs h₂”: the evidence arrow points left (LR = 1/4) but the prior arrow (odds 9) is longer: MAP stays with h₁. Lower the prior until they agree.
+2. Load the two text presets: the same likelihood-ratio arrow (3/2) ends on different sides of 1 depending on where the prior starts.
+3. Set P(x | c₁) = P(x | c₂). The observation carries no information: posterior odds equal prior odds.
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+P(A) = 0.25, P(B) = 0.75; P(x | A) = 0.6, P(x | B) = 0.15. What are the ML and MAP classes?
+
+<Option correct>ML: A, MAP: A <Why>LR = 4 > 1; posterior odds 4 × (1/3) = 4/3 > 1, so the evidence overcomes the prior here.</Why></Option>
+<Option>ML: A, MAP: B <Why>MAP scores are 0.15 for A and 0.1125 for B.</Why></Option>
+<Option>ML: B, MAP: B <Why>The likelihood is larger for A.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Posterior odds for spam are 3/4. What is P(spam | x)?
+
+<Option>0.75 <Why>That treats odds as a probability.</Why></Option>
+<Option correct>3/7 <Why>o/(1 + o) = (3/4)/(7/4).</Why></Option>
+<Option>4/7 <Why>That is P(ham | x).</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+When are h_MAP and h_ML guaranteed to coincide?
+
+<Option>Always. <Why>Unequal priors can separate them (see the worked example).</Why></Option>
+<Option correct>When all hypotheses have equal prior probability. <Why>Then P(h) is a common factor, like P(D).</Why></Option>
+<Option>When the data set is large. <Why>Large data usually reduce the prior’s influence, but there is no guarantee.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+MAP maximises $P(D \mid h)P(h)$; ML maximises $P(D \mid h)$ and equals MAP under equal priors. For two classes, posterior odds = likelihood ratio × prior odds — evidence shifts the prior, and the decision depends on whether the shift crosses 1.
+</Callout>

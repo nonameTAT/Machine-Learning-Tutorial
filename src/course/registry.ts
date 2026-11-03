@@ -2,7 +2,12 @@ import { WEEK_DEFS } from '../content';
 import { OverviewPage } from './overview';
 import { PracticePage } from './PracticePage';
 import { ReadinessPage } from './ReadinessPage';
-import type { Page, Week, WeekDef } from './types';
+import type { ComponentType } from 'react';
+import type { Page, PageStats, Week, WeekDef } from './types';
+
+// Each .mdx page exports `stats`; look them up by the page component (the same module index.ts imported).
+const MDX = import.meta.glob<{ default: ComponentType; stats?: PageStats }>('../content/week*/**/*.mdx', { eager: true });
+const STATS = new Map(Object.values(MDX).map((m) => [m.default, m.stats]));
 
 const START = 'Start here';
 const END = 'Consolidate';
@@ -26,7 +31,7 @@ function buildWeek(def: WeekDef): Week {
     route,
     key: (name) => join(prefix, '.', name),
   };
-  const add = (p: Omit<Page, 'week' | 'checks'> & { checks?: string[] }) => week.pages.push({ checks: [], ...p, week });
+  const add = (p: Omit<Page, 'week' | 'checks'> & { checks?: string[] }) => week.pages.push({ checks: [], stats: STATS.get(p.Component), ...p, week });
 
   add({ id: week.home, kind: 'overview', part: START, num: '', title: 'Overview & study route', question: 'How should I study this week?', Component: OverviewPage });
   let n = 0;

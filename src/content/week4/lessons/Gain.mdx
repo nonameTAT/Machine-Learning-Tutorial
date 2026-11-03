@@ -1,0 +1,106 @@
+import { GainLab } from '../labs/GainLab';
+
+## How uncertain will the label be after the test?
+
+Entropy scores one node. A test turns one node into several, so ask: *after I learn the outcome of this test, how uncertain will I be about the label?* A random example from $S$ lands in child $S_v$ with probability $|S_v| / |S|$, and there its remaining uncertainty is $H(S_v)$. The expected remaining uncertainty is therefore a **size-weighted** average, and the improvement is
+
+$$
+\operatorname{IG}(S, A) = H(S) - \sum_{v \in \mathcal V_A} \frac{|S_v|}{|S|}\,H(S_v),
+$$
+
+where $\mathcal V_A$ is the set of outcomes of test $A$. This is the **information gain**; ID3 chooses the candidate with the largest gain.
+
+<Callout kind="warning" title="Why an ordinary average is wrong">
+A split makes a pure child with 90 examples and a balanced child with 10. The expected remaining entropy is $0.9 \times 0 + 0.1 \times 1 = 0.1$ bits. An unweighted average gives 0.5 bits — treating a branch that ten examples reach as if it held half the population.
+</Callout>
+
+<Lab title="Gain as a picture" purpose="Each test is drawn as blocks: width = how many examples take the branch, height = that branch’s entropy. The total area divided by n is the expected entropy after the test, and the gain is the gap below the parent’s line.">
+<GainLab />
+</Lab>
+
+<TryThis>
+1. Worked example: A₁ leaves less area than A₂ — gains 0.266 and 0.121. Check that each pair of branches adds up to the parent (29+, 35−).
+2. Drag A₂’s left branch to (29+, 0−). Both branches become pure and the gain reaches its maximum, H(S) = 0.994.
+3. “Unequal branch sizes”: T₁ has a tiny impure branch and a huge pure one. Turn on the unweighted average: it rises far above the parent line — the wrong formula would report negative gain.
+4. T₂ sends (48+, 2−) one way and (47+, 3−) the other — almost the parent’s proportions — so its gain is close to 0 even though it splits the examples in half.
+</TryThis>
+
+## Worked example: 64 observations
+
+The parent has 29 positive and 35 negative examples. Test $A_1$ sends them to (21+, 5−) and (8+, 30−); test $A_2$ to (18+, 33−) and (11+, 2−).
+
+<Steps>
+<Step title="Parent entropy">
+$$
+H(S) = -\tfrac{29}{64}\log_2\tfrac{29}{64} - \tfrac{35}{64}\log_2\tfrac{35}{64} = 0.993651.
+$$
+</Step>
+
+<Step title={<>Children of <M t="A_1" />, each with its own proportions</>}>
+$$
+H(21{+}, 5{-}) = H\big(\tfrac{21}{26}\big) = 0.706274, \qquad H(8{+}, 30{-}) = H\big(\tfrac{8}{38}\big) = 0.742488.
+$$
+</Step>
+
+<Step title="Weight by branch size and subtract">
+$$
+\operatorname{IG}(S, A_1) = 0.993651 - \Big(\tfrac{26}{64}(0.706274) + \tfrac{38}{64}(0.742488)\Big) = 0.993651 - 0.727776 = 0.265875.
+$$
+</Step>
+
+<Step title={<>Same for <M t="A_2" /></>}>
+$$
+H(18{+}, 33{-}) = 0.936667,\quad H(11{+}, 2{-}) = 0.619382,\quad \operatorname{IG}(S, A_2) = 0.993651 - \Big(\tfrac{51}{64}(0.936667) + \tfrac{13}{64}(0.619382)\Big) = 0.121432.
+$$
+</Step>
+
+<Step title="Decide">
+$A_1$ reduces the uncertainty more: it is the better immediate split.
+</Step>
+</Steps>
+
+<Callout kind="note" title="A routine that catches most slips">
+Check that the children’s counts add up to the parent’s and that the weights add up to 1. Compute each child’s proportions from that child’s own total. Keep full precision until the end. A negative gain is a certain sign of a counting or weighting error.
+</Callout>
+
+## What gain measures — and its bounds
+
+Writing $Y$ for the label and $A$ for the test outcome of a random example at the node,
+
+$$
+\operatorname{IG}(S, A) = H(Y) - H(Y \mid A),
+$$
+
+the (empirical) **mutual information** between test and label: how much knowing the outcome tells you about the class. Two bounds follow, and both are worth being able to justify.
+
+- **$\operatorname{IG} \ge 0$.** The parent’s class distribution is the size-weighted mixture of the children’s: $p = \sum_v w_v\,p^{(v)}$. Entropy is concave, so $H\big(\sum_v w_v p^{(v)}\big) \ge \sum_v w_v H(p^{(v)})$ (Jensen’s inequality). Equality — zero gain — holds exactly when every non-empty child has the parent’s proportions: the outcome is independent of the label in this sample.
+- **$\operatorname{IG} \le H(S)$**, because the subtracted term is never negative. Equality holds exactly when every non-empty child is pure.
+
+## Check your understanding
+
+<Quiz id="q1">
+A test splits (6+, 4−) into (3+, 2−) and (3+, 2−). What is its gain?
+
+<Option correct>0 <Why>Both children have the parent’s proportions 3/5, so nothing has been learned about the label.</Why></Option>
+<Option>Positive, because the test made two children <Why>Making branches is not the same as separating classes.</Why></Option>
+<Option>Negative <Why>Gain is never negative for a genuine partition (concavity of entropy).</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Your hand calculation gives a gain of −0.05. What is the most likely explanation?
+
+<Option>The test makes predictions worse <Why>Gain cannot be negative; the arithmetic is wrong.</Why></Option>
+<Option correct>A counting or weighting slip: children not adding up to the parent, unweighted averaging, or a child’s proportions taken over the wrong total <Why>Run the verification routine.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+When does the gain of a test equal the parent entropy H(S)?
+
+<Option correct>When every non-empty child is pure <Why>Then the expected remaining entropy is 0.</Why></Option>
+<Option>When the children have equal sizes <Why>Equal sizes say nothing about the labels inside them.</Why></Option>
+<Option>Never <Why>It happens whenever the test separates the classes completely, e.g. Humidity inside the Sunny branch (lesson 6).</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Information gain is the parent’s entropy minus the size-weighted average entropy of the children: how much a test’s outcome reduces label uncertainty, on average over the examples. Weights matter because a branch matters in proportion to how many examples take it. Gain is 0 when the outcome tells nothing about the label and equals H(S) when every child is pure.
+</Callout>

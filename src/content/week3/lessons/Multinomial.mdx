@@ -1,0 +1,100 @@
+import { TextNBLab } from '../labs/TextNBLab';
+
+## A distribution over the vocabulary
+
+In the multinomial model every word *position* is a categorical variable with $m$ outcomes, drawn independently from the same class-specific distribution. Now $\theta_{jc}$ is the probability that a token is word $j$, given class $c$.
+
+<Steps>
+Training:
+
+<Step title="Add the count vectors within each class">
+Spam: $(5, 9, 3)$; ham: $(11, 3, 3)$. Each class has 17 vocabulary tokens.
+</Step>
+
+<Step title="One pseudo-count per vocabulary word">
+$$
+\hat\theta_{jc} = \frac{T_{jc} + 1}{T_c + m}, \qquad T_c = \sum_j T_{jc}, \quad m = |V| = 3,
+$$
+</Step>
+
+<Step title="Result: 20 tokens per class after smoothing">
+$$
+\hat\theta_{\text{spam}} = \big(\tfrac{6}{20}, \tfrac{10}{20}, \tfrac{4}{20}\big) = (0.3, 0.5, 0.2), \qquad \hat\theta_{\text{ham}} = \big(\tfrac{12}{20}, \tfrac{4}{20}, \tfrac{4}{20}\big) = (0.6, 0.2, 0.2).
+$$
+</Step>
+</Steps>
+
+Here the components *do* sum to 1: each token falls in exactly one vocabulary category. Class priors still count documents, not tokens.
+
+## Score a count vector
+
+For counts $n = (n_1, \dots, n_m)$ with length $L = \sum_j n_j$:
+
+$$
+P(n \mid c, L) = \frac{L!}{\prod_j n_j!}\prod_{j=1}^m \theta_{jc}^{\,n_j}.
+$$
+
+Each particular ordering has probability $\prod_j\theta_{jc}^{n_j}$; the multinomial coefficient counts how many orderings share these counts. This model conditions on the document length rather than modelling it.
+
+<Callout kind="example" title="Example: three a’s and one b">
+$n = (3, 1, 0)$, $L = 4$, coefficient $4!/(3!\,1!\,0!) = 4$:
+
+$$
+P(n \mid \text{spam}) = 4 \times 0.3^3 \times 0.5 \times 0.2^0 = 0.054, \qquad P(n \mid \text{ham}) = 4 \times 0.6^3 \times 0.2 \times 0.2^0 = 0.1728.
+$$
+
+The likelihood ratio is $0.054/0.1728 = 5/16$: the ML classification is **ham** — the opposite of the Bernoulli model for the same email. With equal priors the spam posterior is $5/21 \approx 0.238$.
+</Callout>
+
+## Why the two models disagree
+
+One occurrence of a is twice as likely in ham (0.6 vs 0.3). The multinomial model counts that evidence three times — $2^3 = 8$ in favour of ham — against b’s factor of 2.5 for spam: $2.5/8 = 5/16$. The Bernoulli model only records that a occurred. Neither calculation is wrong; the models answer different questions about the same document. The multinomial verdict comes mainly from the three occurrences of word a.
+
+The coefficient is the same for every class for a fixed document, so it cancels in comparisons and normalisation. The classification score is
+
+$$
+\ell_c = \log P(c) + \sum_j n_j\log\theta_{jc}.
+$$
+
+<Callout kind="warning" title="A missing factor is not always a mistake">
+Keep the coefficient when reporting the probability of the count vector; omit it for class comparison. Absent words have exponent 0 and contribute nothing — do not insert Bernoulli-style $(1 - \theta_{jc})$ factors.
+</Callout>
+
+<Lab title="Multinomial Naive Bayes on the training emails" purpose="θ is a distribution over a, b, c per class; each occurrence of a word contributes one factor.">
+<TextNBLab initialModel="multinomial" initialDoc="a a a b" />
+</Lab>
+
+<TryThis>
+1. Reproduce the worked example: “a a a b” gives 0.054 versus 0.1728. Switch the model to Bernoulli and watch the decision flip to spam.
+2. Remove one a at a time. At which point does the multinomial model change its mind?
+3. Try the empty email “d e”: L = 0, every factor is 1, and the decision rests on the prior alone. Compare Bernoulli.
+</TryThis>
+
+## Check your understanding
+
+<Quiz id="q1">
+With the smoothed θ, what is P(n | spam) for the count vector n = (0, 2, 1)?
+
+<Option correct>3 × 0.5² × 0.2 = 0.15 <Why>L = 3, coefficient 3!/(0!2!1!) = 3.</Why></Option>
+<Option>0.5² × 0.2 = 0.05 <Why>That is one ordering; the coefficient counts the 3 orderings.</Why></Option>
+<Option>3 × 0.7 × 0.5² × 0.2 <Why>Absent words contribute nothing in the multinomial model (no 1 − θ factor).</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Why can the multinomial coefficient be dropped when choosing the class?
+
+<Option correct>It is the same for every class for a given document. <Why>It depends only on the counts, not on θ_c.</Why></Option>
+<Option>It is always 1. <Why>It is 4 for (3, 1, 0).</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+What smoothing denominator does the multinomial model use for spam?
+
+<Option correct>tokens in spam + vocabulary size = 17 + 3 <Why>One pseudo-count per vocabulary word.</Why></Option>
+<Option>documents in spam + 2 = 6 <Why>That is the Bernoulli denominator.</Why></Option>
+<Option>17 + 1 <Why>Every vocabulary word gets a pseudo-count.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Multinomial Naive Bayes estimates a word distribution per class, $\theta_{jc} = (T_{jc} + 1)/(T_c + m)$, and scores counts with $\tfrac{L!}{\prod n_j!}\prod_j\theta_{jc}^{n_j}$; the coefficient cancels in comparisons and absent words do not contribute. Repeated words count repeatedly, which is why it can disagree with the Bernoulli model.
+</Callout>

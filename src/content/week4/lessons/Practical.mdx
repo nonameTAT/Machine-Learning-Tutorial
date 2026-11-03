@@ -1,0 +1,94 @@
+import { CostLab } from '../labs/CostLab';
+import { MissingLab } from '../labs/MissingLab';
+
+## From a tree to rules, and pruning the rules
+
+Every root-to-leaf path is a rule: IF (conjunction of tests) THEN (label). Turning the tree into rules gives a different handle for simplification. In **rule post-pruning**, each rule is shortened separately: drop any condition whose removal does not hurt estimated accuracy. That can remove a test near the root from one rule while keeping it in the others — something subtree pruning cannot do, since a node is shared by every path below it.
+
+The price: a shortened rule covers more inputs, so the rules may now overlap (and some inputs may be covered by none). A rule set therefore needs an explicit way to resolve conflicts — for example, order the rules and use the first that fires, with a default class at the end.
+
+## Attributes that are expensive to measure
+
+Some attributes cost money, time or risk to observe — a blood test compared with a temperature reading. When building the tree we may prefer an informative test that is also cheap. One heuristic replaces the gain by
+
+$$
+\frac{\operatorname{IG}(S, A)^2}{\operatorname{Cost}(A)}, \qquad \operatorname{Cost}(A) > 0,
+$$
+
+which trades information against cost. This is a preference built into the search, not a new definition of information gain, and other trade-offs are possible.
+
+## Mistakes that cost different amounts
+
+Measurement cost concerns *obtaining* an input. Misclassification cost concerns the *consequence of a prediction* — a missed disease versus an unnecessary follow-up. Week 3’s decision rule applies at every leaf: with estimated class probabilities $p_c$ at the leaf and loss $L(a, c)$ for action $a$ when the truth is $c$, choose the action with the least expected loss
+
+$$
+R(a) = \sum_c L(a, c)\,p_c.
+$$
+
+With false-positive cost 1, false-negative cost 10 and $p(\text{positive}) = 0.2$ at a leaf: predicting positive costs $1 \times 0.8 = 0.8$ in expectation, predicting negative costs $10 \times 0.2 = 2$. The leaf should predict **positive**, although positives are the minority there. Majority voting is the special case of equal costs.
+
+<Lab title="Expected cost at a leaf" purpose="Set the leaf’s positive probability and the two error costs. The cheaper line is the decision.">
+<CostLab />
+</Lab>
+
+<TryThis>
+1. Start at p = 0.2 with costs 1 and 10: the minimum-cost action is positive while the majority vote says negative.
+2. Make the costs equal: the threshold moves to 0.5 and agrees with the majority vote.
+3. Find the p where the two lines cross and check it equals C_FP/(C_FP + C_FN).
+</TryThis>
+
+A common design grows the tree with an impurity criterion and brings costs in at the leaves and during pruning. The split with the lowest immediate cost need not be the one that exposes the most useful structure below it.
+
+## Missing values: say how they are routed
+
+An example reaches a node that tests an attribute it does not have. Three policies are common:
+
+1. Fill in the most common value among the training examples at that node.
+2. During training only, fill in the most common value among examples *of the same class* at that node.
+3. Send the example down *every* branch, with weights $q_v$ equal to the fraction of training examples at the node that took branch $v$ (so $\sum_v q_v = 1$). During training, the example then contributes fractional counts to each child, and gains are computed from weighted counts. At prediction time, combine the leaves’ class distributions with the weights that reach them.
+
+<Lab title="Routing a missing value" purpose="The finished PlayTennis tree. Mark any attribute as missing (?) and compare fractional routing with filling in the most common value.">
+<MissingLab />
+</Lab>
+
+<TryThis>
+1. Sunny, Humidity ?, Weak: the Sunny node splits the weight 3/5 to High (No) and 2/5 to Normal (Yes), so P(Yes) = 2/5 — predict No.
+2. Outlook ?, High, Weak: weights 5/14, 4/14, 5/14 go down the three branches; P(Yes) = 9/14. Filling in the most common Outlook (Sunny, tied with Rain and taken first) predicts No instead.
+3. Overcast with everything else missing: the path never tests the missing attributes, so they do not matter.
+</TryThis>
+
+<Callout kind="warning" title="Training information that does not exist at prediction time">
+Class-conditional filling (policy 2) uses the example’s label. A new example’s label is exactly what we are trying to predict, so that policy cannot be used at prediction time. Specify a policy that is feasible there — node-level filling or fractional routing — rather than quietly using the answer to fill in the input.
+</Callout>
+
+## Windowing: learning from a manageable subset
+
+A historical technique for training sets too large to process at once: pick a random subset (the *window*), grow a tree on it, classify the rest of the training set, add some misclassified examples to the window, and repeat. It concentrates effort on the hard cases. Note what its stopping check means: classifying the remaining *training* examples correctly is not evidence of generalisation, and if identical inputs carry conflicting labels the loop needs an error-tolerant stopping rule or it never ends.
+
+## Check your understanding
+
+<Quiz id="q1">
+A leaf has P(positive) = 0.2, false-positive cost 1 and false-negative cost 10. What should it predict?
+
+<Option correct>Positive: expected cost 0.8, against 2 for negative <Why>The rarer class wins because missing it is ten times worse.</Why></Option>
+<Option>Negative: it is the majority <Why>Majority vote assumes equal costs.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+With fractional routing, a Sunny day with Humidity missing has P(No) equal to…
+
+<Option correct>3/5 <Why>Three of the five Sunny training days took the High branch, whose leaf is No.</Why></Option>
+<Option>1/2 <Why>The weights come from training counts at the node, not from the number of branches.</Why></Option>
+<Option>5/14 <Why>That is the proportion of Sunny days overall, not the routing weight at the Sunny node.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Why can’t “fill in the most common value among examples of the same class” be used for a new example?
+
+<Option correct>Its class is unknown — that is what we are predicting <Why>The policy is available only during training.</Why></Option>
+<Option>It is too slow <Why>Speed is not the problem; the required information does not exist.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Practical trees need explicit policies. Rules can be pruned one at a time but then need conflict resolution. Measurement cost can shape the search; misclassification cost decides what each leaf predicts, by minimum expected loss. A missing value must be routed by a rule that is feasible at prediction time — fractional routing sends weight down every branch and averages the leaves.
+</Callout>

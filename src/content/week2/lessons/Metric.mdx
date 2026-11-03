@@ -1,0 +1,91 @@
+import { TriangleLab } from '../labs/TriangleLab';
+
+## Why ask for more than “a number that is small for similar things”?
+
+Any formula can produce numbers. A **metric** formalises the properties we silently assume when we say “distance”: no separation from yourself, symmetry, and no shortcuts. Algorithms that search for neighbours efficiently, and arguments about neighbourhoods, rely on these properties.
+
+Given an instance space $\mathcal X$, a **distance metric** is a function $\mathrm{Dis}: \mathcal X \times \mathcal X \to [0, \infty)$ such that for all $x, y, z$:
+
+| Property | Statement | Meaning |
+| --- | --- | --- |
+| 1. Zero at the same point | $\mathrm{Dis}(x, x) = 0$ | no separation from yourself |
+| 2. Positive otherwise | $x \ne y \Rightarrow \mathrm{Dis}(x, y) > 0$ | distinct points are distinguishable |
+| 3. Symmetry | $\mathrm{Dis}(x, y) = \mathrm{Dis}(y, x)$ | order does not matter |
+| 4. Triangle inequality | $\mathrm{Dis}(x, z) \le \mathrm{Dis}(x, y) + \mathrm{Dis}(y, z)$ | a detour cannot be shorter |
+
+If property 2 is weakened so that $\mathrm{Dis}(x, y) = 0$ is allowed for $x \ne y$, the function is a **pseudometric**.
+
+## One counterexample disproves a property
+
+The triangle inequality fails for Minkowski distances with $p < 1$. To see it, you do not need a general proof — just three points:
+
+<Callout kind="example" title="p = ½">
+$a = (0, 0)$, $b = (1, 0)$, $c = (1, 1)$. Directly,
+
+$$
+d_{1/2}(a, c) = \big(\sqrt1 + \sqrt1\big)^2 = 4,
+$$
+
+but each leg via $b$ differs in one coordinate only, so $d_{1/2}(a, b) = d_{1/2}(b, c) = 1$. Since $4 > 1 + 1$, the triangle inequality fails. The formula is symmetric and zero only at identical points — those properties alone do not make it a metric.
+</Callout>
+
+<Callout kind="example" title="Squared Euclidean distance is not a metric either">
+On the real line take 0, 1, 2. The direct squared distance is $4$; the two legs total $1 + 1 = 2$. Violated. Yet squared Euclidean distance orders neighbours exactly as Euclidean distance does (lesson 11) — a function can be useful for ranking without being a metric.
+</Callout>
+
+<Lab title="Test the triangle inequality" purpose="Drag the three points, change p, or switch to squared Euclidean distance. Green = holds for these points; red = a counterexample.">
+<TriangleLab />
+</Lab>
+
+<TryThis>
+1. Start from the p = ½ counterexample and slide p up. At which p does the inequality start to hold for these three points?
+2. At p = 1, 2 or ∞, try hard to make it fail. You cannot: for p ≥ 1, d_p comes from a norm, and norms satisfy the triangle inequality.
+3. Squared Euclidean on a line: move b off the line. Does it still fail? Find where it starts to hold (hint: a right angle at b).
+</TryThis>
+
+## Pseudometrics: deliberately ignoring a difference
+
+A pseudometric keeps symmetry and the triangle inequality but lets distinct points be at distance zero. For example,
+
+$$
+d(\bx, \bz) = |x_1 - z_1|
+$$
+
+ignores the second coordinate: $(1, 0)$ and $(1, 9)$ are different points at distance 0. This is exactly what happens when a feature’s weight is set to zero in a weighted distance — setting $z_j$ to zero eliminates that dimension altogether. If all weights are positive, weighted Euclidean distance is a metric again.
+
+<Callout kind="note" title="“Not a norm” is not “not a metric”">
+The mismatch count $d_0$ (lesson 11) is not a norm, but it *is* a metric on fixed-length vectors: for each coordinate, if $x_r \ne z_r$, then $y_r$ must differ from at least one of them, so every mismatch on the direct route is paid for on the detour.
+</Callout>
+
+<Callout kind="note" title="How to answer a metric question">
+State the required property. To **prove** it, argue for arbitrary inputs — checking three convenient pairs is not a proof. To **disprove** it, give explicit points that violate it: one valid counterexample is enough.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+d(x, z) = √((x₁ − z₁)² + 0·(x₂ − z₂)²) on ℝ². What is it?
+
+<Option>A metric <Why>Distinct points (1, 0) and (1, 8) are at distance 0, violating property 2.</Why></Option>
+<Option correct>A pseudometric <Why>It equals |x₁ − z₁|: symmetric, triangle inequality holds, but zero for some distinct points.</Why></Option>
+<Option>Neither <Why>Symmetry and the triangle inequality do hold.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+You checked the triangle inequality for a new distance on 50 random triples and it always held. What can you conclude?
+
+<Option>It is a metric. <Why>Examples cannot prove a property for all inputs; a counterexample may exist elsewhere.</Why></Option>
+<Option correct>Nothing conclusive — a proof for arbitrary points is needed (one counterexample would settle it the other way). <Why>Proving needs generality; disproving needs a single case.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+For which Minkowski orders is d_p a metric?
+
+<Option>all p > 0 <Why>p = ½ fails the triangle inequality (4 > 1 + 1).</Why></Option>
+<Option correct>p ≥ 1 (including p = ∞) <Why>Then ‖·‖\_p is a norm, and every norm satisfies the triangle inequality.</Why></Option>
+<Option>only p = 2 <Why>p = 1 and p = ∞ are metrics too; p = 2 is only special for rotation invariance.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A metric is zero only between identical points, symmetric, and obeys the triangle inequality. Minkowski $d_p$ is a metric for $p \ge 1$ but not for $p < 1$; squared Euclidean distance is not a metric (yet ranks neighbours correctly); allowing zero distance between distinct points gives a pseudometric, as when a feature’s weight is zero.
+</Callout>

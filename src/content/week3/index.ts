@@ -1,24 +1,24 @@
 import { defineWeek } from '../../course/types';
-import Overview from './Overview';
-import Reference from './Reference';
-import practice from './practice';
-import Bias from './lessons/Bias';
-import Bayes from './lessons/Bayes';
-import MAP from './lessons/MAP';
-import BaseRate from './lessons/BaseRate';
-import Risk from './lessons/Risk';
-import GaussNoise from './lessons/GaussNoise';
-import BayesOpt from './lessons/BayesOpt';
-import BayesError from './lessons/BayesError';
-import NB from './lessons/NB';
-import PlayTennis from './lessons/PlayTennis';
-import Smoothing from './lessons/Smoothing';
-import GNB from './lessons/GNB';
-import Text from './lessons/Text';
-import Bernoulli from './lessons/Bernoulli';
-import Multinomial from './lessons/Multinomial';
-import Missing from './lessons/Missing';
-import Limits from './lessons/Limits';
+import Overview from './Overview.mdx';
+import Reference from './Reference.mdx';
+import Practice, { blurb, groups } from './practice.mdx';
+import Bias from './lessons/Bias.mdx';
+import Bayes from './lessons/Bayes.mdx';
+import MAP from './lessons/MAP.mdx';
+import BaseRate from './lessons/BaseRate.mdx';
+import Risk from './lessons/Risk.mdx';
+import GaussNoise from './lessons/GaussNoise.mdx';
+import BayesOpt from './lessons/BayesOpt.mdx';
+import BayesError from './lessons/BayesError.mdx';
+import NB from './lessons/NB.mdx';
+import PlayTennis from './lessons/PlayTennis.mdx';
+import Smoothing from './lessons/Smoothing.mdx';
+import GNB from './lessons/GNB.mdx';
+import Text from './lessons/Text.mdx';
+import Bernoulli from './lessons/Bernoulli.mdx';
+import Multinomial from './lessons/Multinomial.mdx';
+import Missing from './lessons/Missing.mdx';
+import Limits from './lessons/Limits.mdx';
 
 export default defineWeek({
   n: 3,
@@ -249,7 +249,7 @@ export default defineWeek({
       ],
     },
   ],
-  practice,
+  practice: { blurb, groups, page: Practice },
   reference: Reference,
   readiness: {
     items: [

@@ -1,0 +1,28 @@
+import { StudyRoute } from '../../course/overview';
+
+## The thread of the week
+
+Week 2 separated classes with a boundary or with nearby examples. Week 3 asks a different question: *which class could plausibly have generated this observation, and how should uncertainty affect the decision?* Choose assumptions, estimate probabilities, update beliefs with evidence, then choose a prediction using the relevant loss. Naive Bayes makes this practical by simplifying how features interact.
+
+If time is short, the spine is lessons 2–5 (Bayes’ rule, odds, base rates, costs), 9–11 (Naive Bayes, PlayTennis, smoothing) and 13–15 (text models). Lessons 6–8 connect the framework to regression and to the limits of any classifier.
+
+<StudyRoute />
+
+## What carries over
+
+| Earlier idea | Where it returns this week |
+| --- | --- |
+| Week 1: least squares from Gaussian maximum likelihood | the same derivation as an instance of Bayesian learning (lesson 6) |
+| Week 1: bias–variance | inductive bias versus statistical bias (lesson 1) |
+| Week 2: generative vs discriminative, Bayes’ rule | developed fully: MAP, ML, odds (lessons 2–3) |
+| Week 2: confusion matrix, thresholds, costs of errors | minimum expected loss and the cost threshold (lesson 5) |
+| Week 2: missing values, feature types | missing features and categorical tables in Naive Bayes (lessons 10, 16) |
+
+## Subtleties worth remembering
+
+- **Inductive vs statistical bias:** stronger inductive assumptions do not necessarily create greater statistical bias; it depends on whether they match the problem (lesson 1).
+- **PlayTennis:** the “no” PlayTennis product needs 4/5 and 3/5, not denominators of 9 (lesson 10).
+- **Gaussian Naive Bayes:** distinguish variance from standard deviation; the Gaussian prefactor is 1/(√(2π)σ) (lesson 12).
+- **Missing features:** marginalising a missing feature in a general posterior table needs weights conditional on the observed features (lesson 16).
+- **Odds:** likelihood ratios and posterior odds differ by the prior odds; comparing each with 1 is a different rule unless the priors are equal (lessons 3, 17).
+- **Zero counts:** a zero factor eliminates one class score, not necessarily every prediction (lesson 11).

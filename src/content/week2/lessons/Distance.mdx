@@ -1,0 +1,113 @@
+import { MinkowskiLab } from '../labs/MinkowskiLab';
+
+## “Nearest” needs a definition
+
+Nearest-neighbour methods predict whatever the output of the closest stored data point is. Before “closest” means anything we must decide how to measure distance between feature vectors — and different rules can pick different neighbours, and so different labels. The distance is not a technicality; it is part of the model.
+
+## The Minkowski family
+
+For $\bx, \bz \in \R^d$ and an order $p > 0$, the Minkowski distance is
+
+$$
+d_p(\bx, \bz) = \Big(\sum_{r=1}^d |x_r - z_r|^p\Big)^{1/p} = \|\bx - \bz\|_p,
+$$
+
+where $\|\cdot\|_p$ is the $p$-norm ($L_p$ norm). Three members matter most:
+
+<Table
+          head={['Choice', 'Formula', 'Intuition']}
+          rows={[
+            [<>p = 1: Manhattan (city block)</>, <M t="\sum_r |x_r - z_r|" />, 'walk along the grid: add the coordinate differences'],
+            [<>p = 2: Euclidean</>, <M t="\sqrt{\sum_r (x_r - z_r)^2} = \sqrt{(\bx - \bz)\T(\bx - \bz)}" />, 'straight-line distance'],
+            [<>p → ∞: Chebyshev</>, <M t="\max_r |x_r - z_r|" />, 'only the largest coordinate difference counts'],
+          ]}
+        />
+
+<Callout kind="example" title="Same pair, different distances">
+$\bx = (1, 2, 3)$, $\bz = (4, 6, 3)$: absolute differences $(3, 4, 0)$. So $d_1 = 7$, $d_2 = \sqrt{9 + 16} = 5$, $d_\infty = 4$. These are different *measurements* of the same pair, not competing answers to one formula.
+</Callout>
+
+<Steps>
+Why does p → ∞ give the maximum? Factor out the largest difference.
+
+<Step title="Pull out the largest term">
+Let $a_r = |x_r - z_r|$ and $A = \max_r a_r > 0$. Then
+
+$$
+d_p = \Big(\sum_r a_r^p\Big)^{1/p} = A\Big(\sum_r (a_r/A)^p\Big)^{1/p}.
+$$
+</Step>
+
+<Step title="Squeeze">
+Each ratio $a_r/A \le 1$ and at least one equals 1, so the inner sum lies between 1 and $d$:
+
+$$
+A \le d_p \le A\,d^{1/p}.
+$$
+</Step>
+
+<Step title="Take the limit">
+$d^{1/p} \to 1$ as $p \to \infty$, so $d_p \to A = \max_r |x_r - z_r|$. As p grows, the largest coordinate difference dominates.
+</Step>
+</Steps>
+
+## Counting mismatches: the so-called L₀
+
+There is also the so-called “0-norm”, which counts non-zero entries. Applied to a difference vector it counts the positions where two vectors differ:
+
+$$
+d_0(\bx, \bz) = \sum_{r=1}^d \Ind[x_r \ne z_r].
+$$
+
+For the example above, $d_0 = 2$. This is not a Minkowski distance — you cannot get it by putting p = 0 into the formula (the exponent 1/p blows up). The indicator form avoids the ambiguous $0^0$. It is the natural distance for vectors of categories, and it is the simple-matching distance from lesson 7 summed over features.
+
+## Unit circles show the preference
+
+Draw every point at distance 1 from the origin: a diamond for p = 1, a circle for p = 2, a square for p = ∞. For $p < 1$ the shape caves inwards — a warning sign we will make precise in lesson 12. Two observations:
+
+- On the coordinate axes all the shapes touch: if only one coordinate differs, every $d_p$ equals $|x_r - z_r|$.
+- Only the circle is unchanged by rotating the axes. Among these unweighted Minkowski distances, Euclidean is the only rotation-invariant one; calling it the “only choice” is true only within this family.
+
+<Lab title="Which candidate is nearest?" purpose="The shaded p-ball grows from the query until it touches the nearest candidate. Change p and watch the winner change.">
+<MinkowskiLab />
+</Lab>
+
+<TryThis>
+1. With the starting positions, A is nearest for p = 1 but B is nearest for p = 2 and p = ∞. A is far along one axis; B spreads its displacement over both.
+2. Small p rewards concentrating the difference in few coordinates; large p rewards spreading it. Predict the winner at p = ½ before moving the slider.
+3. Drag a candidate onto the horizontal line through the query (same x₂). The mismatch count drops to 1, and every d_p agrees.
+</TryThis>
+
+## Squared Euclidean: same ranking
+
+The square root is increasing, so $d_2(\bx, \bz_1) < d_2(\bx, \bz_2) \iff d_2^2(\bx, \bz_1) < d_2^2(\bx, \bz_2)$. To *rank* neighbours you can skip the square root and save computation. But the squared value is a different number: if a later formula uses the distance itself (distance weighting, lesson 16), you must use the right one.
+
+## Check your understanding
+
+<Quiz id="q1">
+For x = (2, 0, 5) and z = (5, 4, 5), what are d₁, d₂, d∞ and the mismatch count?
+
+<Option correct>7, 5, 4, 2 <Why>Differences (3, 4, 0): sum 7, √25 = 5, max 4, two non-zero.</Why></Option>
+<Option>7, 25, 4, 2 <Why>25 is the squared Euclidean distance.</Why></Option>
+<Option>7, 5, 4, 3 <Why>The third coordinates are equal, so only two positions differ.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Two points differ only in their first coordinate, by 3. What is d_p for any p > 0?
+
+<Option correct>3 <Why>(3^p)^(1/p) = 3: on the axes all Minkowski distances agree.</Why></Option>
+<Option>3^p <Why>The outer power 1/p undoes it.</Why></Option>
+<Option>It depends on p. <Why>Only when two or more coordinates differ.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Which distance is guaranteed to pick the same nearest neighbour as squared Euclidean distance?
+
+<Option>Manhattan <Why>Manhattan can rank differently (see the lab).</Why></Option>
+<Option correct>Euclidean <Why>Square root is increasing, so the ordering is identical.</Why></Option>
+<Option>Chebyshev <Why>It ignores all but the largest coordinate difference.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+The Minkowski distance $d_p = (\sum_r |x_r - z_r|^p)^{1/p}$ gives Manhattan (p = 1), Euclidean (p = 2) and Chebyshev (p → ∞, the largest coordinate difference); the mismatch count $\sum_r\Ind[x_r \ne z_r]$ is a separate idea. Different p can choose different nearest neighbours, so the distance is a modelling decision.
+</Callout>

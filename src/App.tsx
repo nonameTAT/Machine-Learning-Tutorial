@@ -61,10 +61,15 @@ export default function App() {
             </span>
           </span>
         </a>
+        <span className="topbar-page" aria-hidden>
+          {meta.kind === 'lesson' && <b>{meta.num}</b>}
+          {meta.title}
+        </span>
         <div className="topbar-right">
           <WeekSwitch current={week.n} />
           <ThemeMenu pref={theme.pref} resolved={theme.resolved} setPref={theme.setPref} />
         </div>
+        <ReadingProgress route={route} />
       </header>
 
       <Sidebar route={route} week={week} />
@@ -76,13 +81,13 @@ export default function App() {
             <PageContext.Provider value={meta}>
               {meta.kind !== 'overview' && <LessonHeader meta={meta} />}
               <meta.Component />
-              {meta.checks.length > 0 && <Checklist id={meta.id} items={meta.checks} />}
               {meta.kind !== 'overview' && <LessonFooter meta={meta} go={go} />}
             </PageContext.Provider>
           </WeeksContext.Provider>
         </div>
         <Outline route={route} mainRef={mainRef} />
       </main>
+      {meta.kind !== 'overview' && <MobilePager meta={meta} go={go} />}
     </div>
   );
 }
@@ -178,61 +183,170 @@ function Sidebar({ route, week }: { route: string; week: Week }) {
   const [done] = useStored<Record<string, boolean>>('done', {});
   const { lessons, pages } = week;
   const n = lessons.filter((l) => done[l.id]).length;
+  const current = PAGES.get(route)?.part;
+  // a part is open if it holds the current page, unless the reader toggled it; toggles reset per week
+  const [toggled, setToggled] = useState<{ week: number; parts: Set<string> }>({ week: week.n, parts: new Set() });
+  const flipped = toggled.week === week.n ? toggled.parts : new Set<string>();
+  const fixed = (p: string) => p === week.parts[0] || p === week.parts[week.parts.length - 1];
+  const isOpen = (p: string) => fixed(p) || (p === current) !== flipped.has(p);
+  const toggle = (p: string) => {
+    const next = new Set(flipped);
+    if (next.has(p)) next.delete(p);
+    else next.add(p);
+    setToggled({ week: week.n, parts: next });
+  };
   return (
     <nav className="sidebar" aria-label="Lessons">
-      <div className="progress-box">
-        <div className="progress-text">
-          <span>Progress</span>
-          <span>
-            {n}/{lessons.length} lessons
-          </span>
-        </div>
-        <div className="progress-bar">
+      <div className="side-weeks">
+        <WeekSwitch current={week.n} />
+      </div>
+      <div className="side-head">
+        <div className="side-week">Week {week.n}</div>
+        <div className="side-title">{week.title}</div>
+        <div className="progress-bar" role="progressbar" aria-valuenow={n} aria-valuemin={0} aria-valuemax={lessons.length} aria-label="Lessons understood">
           <div style={{ width: `${lessons.length ? (100 * n) / lessons.length : 0}%` }} />
         </div>
-      </div>
-      {week.parts.map((p) => (
-        <div key={p} className="nav-part">
-          <div className="nav-part-title">{p}</div>
-          {pages.filter((l) => l.part === p).map((l) => (
-            <a key={l.id} href={`#/${l.id}`} className={`nav-item ${route === l.id ? 'active' : ''} ${done[l.id] ? 'done' : ''}`}>
-              <span className="nav-num">{done[l.id] ? '✓' : l.num || '·'}</span>
-              <span className="nav-title">{l.title}</span>
-            </a>
-          ))}
+        <div className="progress-text">
+          {n} of {lessons.length} lessons understood
         </div>
-      ))}
+      </div>
+      {week.parts.map((p) => {
+        const items = pages.filter((l) => l.part === p);
+        const ls = items.filter((l) => l.kind === 'lesson');
+        const d = ls.filter((l) => done[l.id]).length;
+        const open = isOpen(p);
+        return (
+          <div key={p} className={`nav-part ${open ? 'open' : ''} ${p === current ? 'current' : ''}`}>
+            {fixed(p) ? (
+              <div className="nav-part-title">{p}</div>
+            ) : (
+              <button className="nav-part-title" aria-expanded={open} onClick={() => toggle(p)}>
+                <span className="chev" aria-hidden>
+                  ▸
+                </span>
+                <span className="nav-part-name">{p}</span>
+                <span className={`nav-part-count ${d === ls.length ? 'all' : ''}`}>
+                  {d}/{ls.length}
+                </span>
+              </button>
+            )}
+            {open &&
+              items.map((l) => (
+                <a
+                  key={l.id}
+                  href={`#/${l.id}`}
+                  title={l.title}
+                  aria-current={route === l.id ? 'page' : undefined}
+                  className={`nav-item ${route === l.id ? 'active' : ''} ${done[l.id] ? 'done' : ''}`}
+                >
+                  <span className="nav-num">{done[l.id] ? '✓' : l.num || '·'}</span>
+                  <span className="nav-title">{l.title}</span>
+                </a>
+              ))}
+          </div>
+        );
+      })}
       <div className="nav-foot">Progress, notes and answers are saved in this browser only (localStorage).</div>
     </nav>
   );
 }
 
+const plural = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
+
 function LessonHeader({ meta }: { meta: Page }) {
+  const [done] = useStored<Record<string, boolean>>('done', {});
+  const st = meta.stats;
+  const goals = meta.checks.slice(0, 3);
   return (
     <header className="lesson-head">
       <div className="lesson-kicker">
         {meta.part}
+        {meta.kind === 'lesson' && (
+          <span className="chip">
+            Lesson {meta.num} of {meta.week.lessons.length}
+          </span>
+        )}
       </div>
       <h1>
         {meta.kind === 'lesson' && <span className="lesson-num">{meta.num}</span>}
         {meta.title}
       </h1>
       <p className="lesson-question">{meta.question}</p>
+      {meta.kind === 'lesson' && st && (
+        <div className="lesson-meta">
+          <span>
+            <i aria-hidden>◷</i> ≈ {st.minutes} min
+          </span>
+          {st.labs > 0 && (
+            <span>
+              <i aria-hidden>◈</i> {plural(st.labs, 'lab')}
+            </span>
+          )}
+          {st.derivations > 0 && (
+            <span>
+              <i aria-hidden>∑</i> {plural(st.derivations, 'derivation')}
+            </span>
+          )}
+          {st.quizzes > 0 && (
+            <span>
+              <i aria-hidden>?</i> {plural(st.quizzes, 'check')}
+            </span>
+          )}
+          {done[meta.id] && <span className="is-done">✓ understood</span>}
+        </div>
+      )}
+      {goals.length > 0 && (
+        <div className="lesson-goals">
+          <div className="goals-title">After this lesson you can</div>
+          <ul>
+            {goals.map((g, i) => (
+              <li key={i}>{g}</li>
+            ))}
+          </ul>
+          {meta.checks.length > goals.length && (
+            <a
+              className="goals-more"
+              href={`#/${meta.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('before-you-move-on')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            >
+              + {meta.checks.length - goals.length} more in the end-of-lesson check
+            </a>
+          )}
+        </div>
+      )}
     </header>
   );
+}
+
+/** The previous and next page; the last page of a week leads on to the next week's overview. */
+function neighbours(meta: Page) {
+  const pages = meta.week.pages;
+  const i = pages.indexOf(meta);
+  const nextWeek = WEEKS[WEEKS.indexOf(meta.week) + 1];
+  return {
+    prev: pages[i - 1] as { id: string; title: string } | undefined,
+    next: (pages[i + 1] ?? (nextWeek && { id: nextWeek.home, title: `Week ${nextWeek.n}: ${nextWeek.title}` })) as { id: string; title: string } | undefined,
+  };
 }
 
 function LessonFooter({ meta, go }: { meta: Page; go: (id: string) => void }) {
   const [done, setDone] = useStored<Record<string, boolean>>('done', {});
   const [notes, setNotes] = useStored<string>(`notes.${meta.id}`, '');
-  // Page through one week; the last page of a week leads on to the next week's overview.
-  const pages = meta.week.pages;
-  const i = pages.indexOf(meta);
-  const prev = pages[i - 1];
-  const nextWeek = WEEKS[WEEKS.indexOf(meta.week) + 1];
-  const next = pages[i + 1] ?? (nextWeek && { id: nextWeek.home, title: `Week ${nextWeek.n}: ${nextWeek.title}` });
+  const { prev, next } = neighbours(meta);
   return (
     <footer className="lesson-foot">
+      {meta.kind === 'lesson' && (
+        <section className={`lesson-end ${done[meta.id] ? 'is-done' : ''}`}>
+          <h2 id="before-you-move-on">Before you move on</h2>
+          {meta.checks.length > 0 && <Checklist id={meta.id} items={meta.checks} />}
+          <button className={`btn complete-btn ${done[meta.id] ? 'is-done' : 'btn-primary'}`} onClick={() => setDone({ ...done, [meta.id]: !done[meta.id] })}>
+            {done[meta.id] ? '✓ Marked as understood — click to undo' : 'Mark this lesson as understood'}
+          </button>
+        </section>
+      )}
       <details className="notes" open={notes.length > 0}>
         <summary>My notes for this page {notes.length > 0 && <span className="muted">· saved</span>}</summary>
         <textarea
@@ -242,11 +356,6 @@ function LessonFooter({ meta, go }: { meta: Page; go: (id: string) => void }) {
           rows={6}
         />
       </details>
-      {meta.kind === 'lesson' && (
-        <button className={`btn complete-btn ${done[meta.id] ? 'is-done' : 'btn-primary'}`} onClick={() => setDone({ ...done, [meta.id]: !done[meta.id] })}>
-          {done[meta.id] ? '✓ Marked as understood — click to undo' : 'Mark this lesson as understood'}
-        </button>
-      )}
       <div className="pager">
         {prev ? (
           <button className="pager-btn" onClick={() => go(prev.id)}>
@@ -265,6 +374,51 @@ function LessonFooter({ meta, go }: { meta: Page; go: (id: string) => void }) {
       </div>
     </footer>
   );
+}
+
+/** Phones: previous / next always within reach at the bottom of the screen. */
+function MobilePager({ meta, go }: { meta: Page; go: (id: string) => void }) {
+  const { prev, next } = neighbours(meta);
+  const pos = meta.week.pages.indexOf(meta) + 1;
+  return (
+    <nav className="mobile-pager" aria-label="Previous and next page">
+      <button className="btn btn-ghost" disabled={!prev} onClick={() => prev && go(prev.id)} aria-label={prev ? `Previous: ${prev.title}` : 'No previous page'}>
+        ←
+      </button>
+      <span className="mobile-pager-pos">
+        {pos} / {meta.week.pages.length}
+      </span>
+      <button className="btn btn-primary" disabled={!next} onClick={() => next && go(next.id)} aria-label={next ? `Next: ${next.title}` : 'No next page'}>
+        Next →
+      </button>
+    </nav>
+  );
+}
+
+/** A thin bar under the top bar showing how far down the page you are. */
+function ReadingProgress({ route }: { route: string }) {
+  const bar = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      if (bar.current) bar.current.style.transform = `scaleX(${max > 0 ? Math.min(1, h.scrollTop / max) : 0})`;
+    };
+    const on = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', on, { passive: true });
+    window.addEventListener('resize', on);
+    return () => {
+      window.removeEventListener('scroll', on);
+      window.removeEventListener('resize', on);
+      cancelAnimationFrame(raf);
+    };
+  }, [route]);
+  return <div ref={bar} className="read-progress" aria-hidden />;
 }
 
 /** "On this page" outline built from the rendered h2 headings. */

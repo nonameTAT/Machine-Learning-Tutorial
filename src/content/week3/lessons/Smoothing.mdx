@@ -1,0 +1,99 @@
+import { PlayTennisLab } from '../labs/PlayTennisLab';
+import { AlphaLab, UnderflowLab } from '../labs/SmoothingLab';
+
+## “Not observed” does not mean “impossible”
+
+No “no” day in the training data was overcast. The raw estimate $\hat P(\text{overcast} \mid \text{no}) = 0/5$ therefore makes the entire “no” score zero for any overcast day, whatever the other features say:
+
+$$
+\hat P(x_i \mid v_j) = 0 \;\Longrightarrow\; \hat P(v_j)\prod_i \hat P(x_i \mid v_j) = 0.
+$$
+
+With 5 “no” examples, never seeing overcast is weak evidence that it cannot happen. This is the **zero-frequency problem**.
+
+## Pseudo-counts: Laplace and add-α smoothing
+
+Add a pseudo-count to *every possible value* (a version of the Laplace estimator). For a categorical feature with $K_j$ possible values:
+
+$$
+\hat P(X_j = v \mid c) = \frac{N_{j,v,c} + \alpha}{N_c + \alpha K_j}, \qquad \alpha > 0.
+$$
+
+Laplace smoothing is $\alpha = 1$; a different constant may sometimes be more appropriate. The denominator grows by $\alpha K_j$ because each of the $K_j$ values received $\alpha$ extra counts — so the probabilities still sum to 1.
+
+<Callout kind="example" title="The “no” outlook table">
+Counts (sunny, overcast, rainy) = (3, 0, 2) and $K = 3$:
+
+$$
+P(\text{sunny} \mid \text{no}) = \tfrac{4}{8}, \quad P(\text{overcast} \mid \text{no}) = \tfrac18, \quad P(\text{rainy} \mid \text{no}) = \tfrac38.
+$$
+
+Humidity has only two values, so its denominator is $5 + 2 = 7$, not 8. Use the feature’s set of *possible* values, not the values that happened to appear in this class.
+</Callout>
+
+<Lab title="Add-α on one table" purpose="Grey: raw frequencies. Orange: smoothed. Watch the zero disappear and the three bars keep summing to 1.">
+<AlphaLab />
+</Lab>
+
+Text models smooth the same way: the Bernoulli model adds two pseudo-documents per class (one containing every word, one containing none), and the multinomial model adds one pseudo-count per vocabulary word. Lessons 14–15 use both.
+
+<Callout kind="note" title="Smoothing changes the model">
+It stops unseen events from being treated as impossible; it does not repair dependent features. One zero rules out one class; prediction becomes undefined only when *every* class score is zero. If smoothing is specified, apply it consistently to the whole table.
+</Callout>
+
+<Lab title="PlayTennis with an overcast day" purpose="Unsmoothed, the “no” score is exactly 0. Switch on Laplace smoothing and compare.">
+<PlayTennisLab initialQuery={['overcast', 'cool', 'high', 'true']} />
+</Lab>
+
+<TryThis>
+1. Unsmoothed: “no” is impossible, so P(yes | x) = 1 — an absurdly confident claim from 14 examples.
+2. With Laplace smoothing every denominator changes: 9 + K for “yes”, 5 + K for “no”, and the prior is left as counted. Is the decision still yes?
+</TryThis>
+
+## Compute in log space
+
+With many features, the product of many small probabilities can *underflow* to 0 in floating point. Since log is strictly increasing, use
+
+$$
+\ell_c = \log\hat P(c) + \sum_{j=1}^d \log\hat P(x_j \mid c), \qquad \hat y = \argmax_c \ell_c.
+$$
+
+This is the same decision, not a different model. Logs do not solve zero counts: $\log 0$ is still minus infinity.
+
+<Lab title="Underflow" purpose="The product of d equal probabilities in double precision, versus the sum of their logs.">
+<UnderflowLab />
+</Lab>
+
+## The whole algorithm
+
+**Train:** count the classes; fix each feature’s possible values; count values within each class; estimate priors and conditional tables; smooth if required.
+
+**Predict:** for each class start with its log prior; add the log probability of each observed feature value; pick the largest score. Normalise only if a probability is requested. With precomputed tables, one prediction costs $O(Kd)$ for $K$ classes and $d$ features.
+
+## Check your understanding
+
+<Quiz id="q1">
+Why is (0 + 1)/(5 + 1) wrong for Laplace-smoothed P(overcast | no)?
+
+<Option correct>It adds a pseudo-count to one value only, so the three-value table no longer sums to 1. <Why>Each of the K = 3 values gets one pseudo-count: denominator 5 + 3.</Why></Option>
+<Option>Laplace smoothing adds 0.5, not 1. <Why>Laplace is α = 1; other α are possible but the denominator must still be N_c + αK.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+A feature has 4 possible values; class c has 10 examples, 3 of them with value v. What is the Laplace estimate of P(v | c)?
+
+<Option correct>4/14 <Why>(3 + 1)/(10 + 4).</Why></Option>
+<Option>4/11 <Why>The denominator adds K = 4, not 1.</Why></Option>
+<Option>3/10 <Why>That is the unsmoothed estimate.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Does working with log probabilities fix the zero-frequency problem?
+
+<Option>Yes — logs make every factor finite. <Why>log 0 = −∞: an impossible event stays impossible.</Why></Option>
+<Option correct>No — it fixes underflow; zeros still need smoothing. <Why>Two different problems, two different fixes.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A zero count makes a whole class score zero. Add-α smoothing $(N_{j,v,c} + \alpha)/(N_c + \alpha K_j)$ gives every possible value a pseudo-count and keeps the table normalised. Sum log probabilities to avoid underflow — same decision, but logs do not remove zeros.
+</Callout>

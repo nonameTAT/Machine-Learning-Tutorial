@@ -1,0 +1,167 @@
+export const blurb = 'Twelve problems on probability, decisions and Naive Bayes, with full answers.';
+
+<Group id="A" title="Probability and decision rules" intro="Q1–Q6: assumptions, Bayes’ rule, costs, Gaussian noise, Bayesian prediction, Bayes error.">
+
+<Problem id="Q1" title="Identify the assumption" lesson="bias">
+
+For each statement, explain what is right or wrong.
+
+1. “Nearest neighbours has no inductive bias because it does not fit a formula.”
+2. “A strong inductive bias must create a large statistical bias.”
+3. “Naive Bayes assumes that the features are independent of the class.”
+
+<Solution>
+(1) k-NN assumes locality under its representation and distance: nearby examples have similar outputs. (2) Strong assumptions need not cause systematic error when they are correct. (3) Naive Bayes assumes mutual independence of the features *conditional on the class*, not independence from the class — useful feature distributions differ between classes.
+</Solution>
+
+</Problem>
+
+<Problem id="Q2" title="ML, MAP and normalisation" lesson="map">
+
+Priors $P(A) = 0.2$, $P(B) = 0.8$; likelihoods $P(x \mid A) = 0.6$, $P(x \mid B) = 0.2$. Give the ML and MAP classes, both posteriors, and the likelihood ratio, prior odds and posterior odds for A versus B.
+
+<Solution>
+ML chooses A (0.6 > 0.2). MAP scores $s_A = 0.12$, $s_B = 0.16$: MAP chooses B. Evidence 0.28, so $P(A \mid x) = 3/7$, $P(B \mid x) = 4/7$. Likelihood ratio 3, prior odds 1/4, posterior odds 3/4 — which equals $(3/7)/(4/7)$.
+</Solution>
+
+</Problem>
+
+<Problem id="Q3" title="Unequal costs" lesson="risk">
+
+Use Q2’s posterior. Correct predictions cost 0; predicting A when B is true costs 1; predicting B when A is true costs 4. Write the loss matrix (actions as rows), compute both conditional risks, choose the minimum-risk action, and derive the posterior threshold for predicting A.
+
+<Hint>Each row: weight its entries by the posterior of their column.</Hint>
+
+<Solution>
+With columns (true A, true B): predict A → (0, 1); predict B → (4, 0).
+
+$$
+R(A \mid x) = 1 \times \tfrac47 = \tfrac47, \qquad R(B \mid x) = 4 \times \tfrac37 = \tfrac{12}{7}.
+$$
+
+Choose A. Threshold $1/(1 + 4) = 1/5$, and $3/7 > 1/5$. This differs from MAP because missing A is costlier.
+</Solution>
+
+</Problem>
+
+<Problem id="Q4" title="Reconstruct the squared-error argument" lesson="gaussnoise">
+
+Assume independent Gaussian errors with common fixed variance $\sigma^2$. Write the likelihood and log-likelihood for observations $(x_i, y_i)$, identify which terms can be removed when maximising over $h$, and explain why the result minimises squared error.
+
+<Solution>
+$$
+L(h) = \prod_i \frac{1}{\sqrt{2\pi\sigma^2}}\exp\Big(-\frac{(y_i - h(x_i))^2}{2\sigma^2}\Big), \quad \log L(h) = -\frac n2\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_i(y_i - h(x_i))^2.
+$$
+
+Log preserves the maximiser. The first term is constant in $h$; the remaining term is a negative constant times the squared error, so maximising it minimises $\sum_i(y_i - h(x_i))^2$.
+</Solution>
+
+</Problem>
+
+<Problem id="Q5" title="MAP model, Bayes prediction and Gibbs" lesson="bayesopt">
+
+Three deterministic hypotheses have posterior weights (0.45, 0.35, 0.20) and predict (+, −, −) at a new $x$. What does the MAP hypothesis predict? The Bayes optimal classifier? With what probability does Gibbs predict each class? Under the posterior predictive distribution, compute the conditional errors of always +, always −, and Gibbs.
+
+<Solution>
+MAP hypothesis: +. Posterior predictive $P(+ \mid x, D) = 0.45$, $P(- \mid x, D) = 0.55$, so Bayes predicts −. Gibbs predicts + with probability 0.45 and − with 0.55. Always + errs with 0.55, always − with 0.45, and
+
+$$
+R_{\text{Gibbs}}(x) = 0.45 \times 0.55 + 0.55 \times 0.45 = 0.495.
+$$
+</Solution>
+
+</Problem>
+
+<Problem id="Q6" title="Bayes error" lesson="bayeserror">
+
+Inputs $u, v$ occur with $P(u) = 0.25$, $P(v) = 0.75$; $P(A \mid u) = 0.9$, $P(A \mid v) = 0.4$. Give the optimal prediction at each input, the Bayes error, and the best expected accuracy.
+
+<Solution>
+Predict A at u (error 0.1), B at v (error 0.4). $R^* = 0.25 \times 0.1 + 0.75 \times 0.4 = 0.325$; best expected accuracy 0.675. Weight the errors by how often each input occurs.
+</Solution>
+
+</Problem>
+
+</Group>
+
+<Group id="B" title="Train, compare and diagnose" intro="Q7–Q12: Naive Bayes in its categorical, Gaussian and text forms, missing values and dependent features.">
+
+<Problem id="Q7" title="Categorical Naive Bayes with smoothing" lesson="smoothing">
+
+Six class-A and four class-B examples. Colour (red, blue, green) has counts (3, 2, 1) in A and (0, 1, 3) in B; Shape (round, square) has (4, 2) in A and (1, 3) in B. Using unsmoothed class priors and Laplace-smoothed feature probabilities, classify (red, round) and compute $P(A \mid x)$. Why do the two features have different smoothing denominators?
+
+<Solution>
+$$
+s_A = \tfrac35 \times \tfrac{3 + 1}{6 + 3} \times \tfrac{4 + 1}{6 + 2} = \tfrac16, \qquad s_B = \tfrac25 \times \tfrac{0 + 1}{4 + 3} \times \tfrac{1 + 1}{4 + 2} = \tfrac{2}{105}.
+$$
+
+$P(A \mid x) = \frac{1/6}{1/6 + 2/105} = \frac{35}{39} \approx 0.897$: predict A. Colour has three possible values, Shape two; the denominator counts one pseudo-observation per possible value.
+</Solution>
+
+</Problem>
+
+<Problem id="Q8" title="PlayTennis without wind information" lesson="missing">
+
+Using the unsmoothed counts of lesson 10, classify (sunny, cool, high, wind missing). Compute both scores and the “yes” posterior, and explain why neither the true nor the false wind factor should be used.
+
+<Solution>
+$$
+s_{\text{yes}} = \tfrac{9}{14}\cdot\tfrac29\cdot\tfrac39\cdot\tfrac39 = \tfrac{1}{63}, \qquad s_{\text{no}} = \tfrac{5}{14}\cdot\tfrac35\cdot\tfrac15\cdot\tfrac45 = \tfrac{6}{175}.
+$$
+
+$P(\text{yes} \mid x) = 25/79 \approx 0.3165$: predict no. Marginalising over the unknown wind sums its two conditional probabilities to 1, so its factor disappears.
+</Solution>
+
+</Problem>
+
+<Problem id="Q9" title="Bernoulli versus multinomial" lesson="multinomial">
+
+With the smoothed text parameters of lessons 14–15 and equal priors, take the document “a a a b”. Write both representations; compute each model’s likelihood ratio and spam posterior; explain the disagreement without calling either calculation wrong. For the empty count vector, what does the multinomial decision depend on, and would Bernoulli treat absence the same way?
+
+<Solution>
+Bernoulli uses (1, 1, 0): ratio 3/2, spam posterior 3/5, predict spam. Multinomial uses (3, 1, 0): ratio 5/16, spam posterior 5/21, predict ham — repeated a’s favour ham only in the count model. For the empty count vector (L = 0) the coefficient and products are 1, so the multinomial decision uses only the priors. Bernoulli multiplies all absence factors $\prod_j(1 - \theta_{jc})$, which may favour a class.
+</Solution>
+
+</Problem>
+
+<Problem id="Q10" title="Gaussian quantities" lesson="gnb">
+
+A Gaussian class-conditional feature has $\mu = 10$, $\sigma = 2$. Evaluate its density at $x = 12$. Is this $P(X = 12)$? For observed values (8, 10, 12), compute the sample variance, sample standard deviation and MLE variance.
+
+<Solution>
+$p(12) = \frac{1}{2\sqrt{2\pi}}e^{-1/2} \approx 0.121$ — a density; the point probability is 0. Mean 10, squared deviations sum to 8: sample variance $8/2 = 4$, sample standard deviation 2, MLE variance $8/3$.
+</Solution>
+
+</Problem>
+
+<Problem id="Q11" title="Missing-value weights" lesson="missing">
+
+$P(\text{spam} \mid A = 0, B = 1) = 0.65$, $P(\text{spam} \mid A = 1, B = 1) = 0.40$, and $P(A = 1 \mid B = 1) = 0.20$. Compute $P(\text{spam} \mid B = 1)$. Would knowing only $P(A = 1) = 0.20$ be sufficient?
+
+<Solution>
+$0.65 \times 0.80 + 0.40 \times 0.20 = 0.60$. The marginal $P(A = 1)$ is not sufficient without an extra assumption relating A and B; the required weight is $P(A = 1 \mid B = 1)$.
+</Solution>
+
+</Problem>
+
+<Problem id="Q12" title="Duplicate evidence can change the class" lesson="limits">
+
+Prior odds for A versus B are 1/5. One binary feature has likelihood ratio 3; a second feature is an exact duplicate. Find the correct posterior odds (true joint distribution) and the odds from multiplying both marginal ratios. Which class does each choose under equal costs?
+
+<Solution>
+The duplicate carries no new evidence: correct odds $\tfrac15 \times 3 = \tfrac35$, favouring B. The naive product gives $\tfrac15 \times 3^2 = \tfrac95$, favouring A. Dependence can reverse a decision, not merely exaggerate confidence.
+</Solution>
+
+</Problem>
+
+</Group>
+
+<Callout kind="warning" title="Errors to catch in your own solution">
+- Reversing P(x | c) and P(c | x), or forgetting the class priors.
+- Using all training examples as the denominator of a within-class frequency.
+- Adding 1 to a smoothing numerator without adding all the pseudo-counts below.
+- Omitting absent-word factors in Bernoulli, or inserting them in multinomial.
+- Treating a density, a joint score or a likelihood ratio as a posterior probability.
+- Replacing a missing feature with zero, or averaging with the wrong weights.
+- Calling the MAP model’s prediction Bayes optimal without averaging over hypotheses.
+</Callout>

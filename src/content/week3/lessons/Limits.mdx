@@ -1,0 +1,107 @@
+import { CalibrationLab } from '../labs/CalibrationLab';
+import { DuplicateLab } from '../labs/DuplicateLab';
+
+## A good decision does not need a good probability
+
+The independence assumption is often violated, yet Naive Bayes “works surprisingly well anyway”. The reason: classification only needs the correct class to receive the *largest* score,
+
+$$
+\argmax_{v_j} \hat P(v_j)\prod_i \hat P(x_i \mid v_j) = \argmax_{v_j} P(v_j)\,P(x_1, \dots, x_d \mid v_j),
+$$
+
+not that the estimated posteriors are correct. Suppose the true posteriors are $(0.6, 0.4)$ and Naive Bayes estimates $(0.95, 0.05)$. Under equal costs the label is right, but the confidence is badly overstated — and a cost-sensitive decision (lesson 5) that uses the probability itself can go wrong. NB posteriors are often unrealistically close to 1 or 0.
+
+<Lab title="Right label, wrong confidence" purpose="One measurement x, with x | A ~ N(+1, 1) and x | B ~ N(−1, 1). Naive Bayes is given the same measurement k times and multiplies k identical factors. Compare its posterior with the true one.">
+<CalibrationLab />
+</Lab>
+
+<TryThis>
+1. Equal priors and τ = ½: both curves cross ½ at x = 0, so every decision agrees. Yet at x = 0.2 the true posterior is 0.60 and Naive Bayes says 0.94.
+2. Raise τ to 0.8, as if wrongly predicting A were costly. A band appears where the overconfident Naive Bayes posterior clears the threshold but the true one does not.
+3. Set k = 1: the curves coincide. With no repeated evidence, Naive Bayes is exact here.
+4. Lower the prior P(A) to 0.2 with τ = ½: the decisions differ in a band too — the double counting outweighs the prior, as the next section shows with odds.
+</TryThis>
+
+## Correlated features double-count evidence
+
+Suppose a binary feature has likelihood ratio 3, and a second feature is an identical copy. Observing both is still *one* piece of evidence: the true joint likelihood ratio is 3. Naive Bayes multiplies the two marginal ratios and uses $3 \times 3 = 9$. That distorts confidence — and, combined with the prior, can reverse the decision. Adding too many redundant attributes (e.g. identical ones) causes problems.
+
+<Lab title="Counting the same clue several times" purpose="Set the prior odds and one feature’s likelihood ratio, then duplicate the feature. The true odds stay put; Naive Bayes keeps multiplying.">
+<DuplicateLab />
+</Lab>
+
+<TryThis>
+1. Default: prior odds 1/3, ratio 2.5. The truth favours B (odds 0.83), but two copies already push Naive Bayes over to A.
+2. Set the ratio to 1 (an uninformative feature): copies change nothing. Duplicates amplify whatever direction the evidence points.
+3. Watch NB’s P(A | x) with 6 copies: confidence near 1 from a single real clue.
+</TryThis>
+
+## A two-word example
+
+From the full posterior table, the posterior odds of spam are:
+
+| Viagra | lottery | full-table posterior odds | MAP |
+| --- | --- | --- | --- |
+| 0 | 0 | 0.31/0.69 = 0.45 | ham |
+| 1 | 1 | 0.40/0.60 = 0.67 | ham |
+| 0 | 1 | 0.65/0.35 = 1.9 | spam |
+| 1 | 0 | 0.80/0.20 = 4.0 | spam |
+
+Naive Bayes instead uses the marginal (one-word) likelihoods:
+
+<Table
+          head={['class', 'P(Viagra = 1 | Y)', 'P(lottery = 1 | Y)']}
+          rows={[
+            ['spam', '0.40', '0.21'],
+            ['ham', '0.12', '0.13'],
+          ]}
+        />
+
+and multiplies them into likelihood ratios:
+
+| Viagra | lottery | NB likelihood ratio | full-table odds |
+| --- | --- | --- | --- |
+| 0 | 0 | $\frac{0.60 \times 0.79}{0.88 \times 0.87} \approx 0.62$ | 0.45 |
+| 0 | 1 | $\frac{0.60 \times 0.21}{0.88 \times 0.13} \approx 1.1$ | 1.9 |
+| 1 | 0 | $\frac{0.40 \times 0.79}{0.12 \times 0.87} \approx 3.0$ | 4.0 |
+| 1 | 1 | $\frac{0.40 \times 0.21}{0.12 \times 0.13} \approx 5.4$ | 0.67 |
+
+With an ML rule (ratio vs 1) the simple model agrees with the MAP prediction in the first three cases, but not the fourth: when both words occur, the product says strongly spam while the full table says ham. Treating the two words as independent evidence missed their interaction.
+
+<Callout kind="note" title="Compare like with like">
+A likelihood ratio and posterior odds differ by the prior odds. For an exact comparison, multiply the NB ratio by the prior odds before comparing it with the full-table posterior odds.
+</Callout>
+
+## A balanced verdict
+
+| Strengths | Limitations |
+| --- | --- |
+| easy and fast to train (counting) and to predict | zero-frequency problem without smoothing |
+| handles many classes naturally | probability outputs are poorly calibrated — “a bad estimator” |
+| few parameters; can need less data when the assumption holds | strong independence assumption, rarely true; redundant features double-count |
+| works well with categorical inputs | numeric features need a distributional assumption (e.g. Gaussian) |
+
+<Callout kind="warning" title="Avoid absolute claims">
+Conditional independence does not guarantee that Naive Bayes beats every other model, and violating it does not guarantee failure. Judge whether the assumptions preserve useful class comparisons, and keep accuracy separate from probability quality.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+Prior odds 1/2; one feature has likelihood ratio 1.5; a second feature is an exact copy. What are the true and the Naive Bayes posterior odds?
+
+<Option correct>true 0.75 (B); NB 1.125 (A) <Why>True: 1/2 × 1.5. NB: 1/2 × 1.5² — the copy flips the decision.</Why></Option>
+<Option>both 1.125 <Why>The copy adds no new evidence, so the true odds use the ratio once.</Why></Option>
+<Option>both 0.75 <Why>Naive Bayes multiplies both marginal ratios.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Naive Bayes reports P(spam | x) = 0.999 and classifies correctly. What can you conclude about the probability?
+
+<Option>It is accurate, since the label is right. <Why>Correct ordering does not imply correct values; NB is often overconfident.</Why></Option>
+<Option correct>Nothing much — NB posteriors are often too extreme; check calibration before using the number. <Why>The probability outputs should not be taken too seriously.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Naive Bayes needs only the right *ordering* of class scores, so it can classify well despite violated assumptions — but its probabilities are often overconfident. Dependent or duplicated features are counted as independent evidence, which can distort confidence and even reverse decisions (both words in the spam example).
+</Callout>

@@ -1,0 +1,118 @@
+import { AUCPairsLab } from '../labs/AUCPairsLab';
+import { ROCLab } from '../labs/ROCLab';
+
+## One scorer, many classifiers
+
+Logistic regression outputs a probability; turning it into a label needs a threshold τ (lesson 3). Every τ gives a different classifier and a different confusion matrix. For scores where larger means “more likely positive”, predict positive when the score is at least τ. Lowering τ can only add positive predictions, so on a fixed dataset:
+
+- TP and FP can only increase (or stay); FN and TN can only decrease.
+- Recall therefore never decreases. Precision may go up or down — it depends on which observations are added.
+
+Rather than pick one τ and report one matrix, we can look at the whole family at once.
+
+## The ROC curve
+
+The **receiver operating characteristic** curve plots the true-positive rate against the false-positive rate as the threshold sweeps from “nothing is positive” to “everything is positive”:
+
+$$
+\TPR = \frac{\TP}{\TP + \FN}\;\;(\text{of actual positives}), \qquad \FPR = \frac{\FP}{\FP + \TN}\;\;(\text{of actual negatives}).
+$$
+
+<Callout kind="warning">
+FPR is *not* $1 - \Prec$. They share the numerator FP, but $1 - \Prec = \FP/(\TP + \FP)$ divides by the predicted positives, while FPR divides by the actual negatives.
+</Callout>
+
+<Steps>
+Six observations, scores already sorted: $(0.95, 0.85, 0.75, 0.60, 0.40, 0.10)$ with labels $(1, 0, 1, 1, 0, 0)$ — three positives, three negatives. Each step of the threshold crosses one observation.
+
+<Step title="Start above every score">
+Nothing is predicted positive: $(\FPR, \TPR) = (0, 0)$.
+</Step>
+
+<Step title="Cross a positive ⇒ step up; cross a negative ⇒ step right">
+Each positive crossed raises TPR by $1/3$; each negative raises FPR by $1/3$.
+</Step>
+
+<Step title="Trace the path">
+| threshold | > 0.95 | 0.95 | 0.85 | 0.75 | 0.60 | 0.40 | 0.10 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| FPR | 0 | 0 | 1/3 | 1/3 | 1/3 | 2/3 | 1 |
+| TPR | 0 | 1/3 | 1/3 | 2/3 | 1 | 1 | 1 |
+</Step>
+
+<Step title="Area under the curve">
+Only horizontal moves add area, each a strip of width 1/3 at the current height:
+
+$$
+\AUC = \tfrac13\cdot\tfrac13 + \tfrac23\cdot 1 = \tfrac79 \approx 0.778.
+$$
+</Step>
+</Steps>
+
+<Callout kind="note" title="Tied scores">
+Observations with equal scores must cross *together*, producing a diagonal segment. Do not give tied scores whichever order flatters the curve.
+</Callout>
+
+<Lab title="Sweep the threshold" purpose="Move the threshold: the red point is the current (FPR, TPR) on the ROC curve, and the readout is its confusion matrix.">
+<ROCLab />
+</Lab>
+
+<TryThis>
+1. In the six-observation example, set the threshold to 0.5: TP = 3, FP = 1, TN = 2, FN = 0. Accuracy 5/6 and recall 1 describe one point on the curve.
+2. Switch to simulated scores and set the separation to 0: the curve hugs the diagonal and AUC ≈ 0.5. At 5 it approaches the top-left corner.
+3. Turn on “cube every score”. Every score changes and the threshold that gives each point changes, but the ROC curve and AUC do not move. Why?
+4. Drag the threshold slowly from 1 down to 0 and watch precision: it does not change monotonically.
+</TryThis>
+
+## Reading an ROC curve and its AUC
+
+- The top-left corner combines high detection with few false alarms. A good model has AUC close to 1.
+- AUC = 0.5 means *random ranking* — the diagonal is the reference line of a scorer that orders positives and negatives at random. It does not prove the algorithm literally guesses, and not every weak classifier sits exactly on the diagonal.
+- AUC depends only on the **ordering** of the scores, so any strictly increasing transformation leaves the curve unchanged.
+
+<Callout kind="intuition" title="Going deeper: AUC as a ranking probability">
+AUC equals the probability that a randomly chosen positive is scored higher than a randomly chosen negative (ties counting ½). In the example the positive scores 0.95, 0.75, 0.60 beat 3, 2 and 2 of the negative scores 0.85, 0.40, 0.10: $7$ of $3 \times 3 = 9$ pairs, so AUC = $7/9$ again.
+</Callout>
+
+<Lab title="AUC as counting pairs" purpose="The unit square is cut into one cell per (positive, negative) pair. A cell is shaded when the positive scores higher. Drag the scores and compare the shaded fraction with the area under the ROC curve.">
+<AUCPairsLab />
+</Lab>
+
+<TryThis>
+1. Worked example: 7 of the 9 cells are shaded, and the area under the curve is 7/9 ≈ 0.778 — the same number.
+2. Drag the negative scored 0.85 below 0.60. The two pairs it was winning flip, all nine cells are shaded and AUC = 1.
+3. Move every point by the same amount, or squeeze them together without changing their order: the grid and the AUC stay the same. AUC sees only the ranking.
+4. Give a positive and a negative exactly the same score: their cell is half shaded. Ties count ½.
+</TryThis>
+
+AUC summarises performance *across* thresholds. It does not choose a threshold, guarantee well-calibrated probabilities, or tell you the accuracy at the operating point you will actually use. Choose τ for the task (on validation data), then report the metrics at that τ.
+
+## Check your understanding
+
+<Quiz id="q1">
+Scores (0.8, 0.6, 0.5, 0.3, 0.1) with labels (1, 1, 0, 1, 0). What is the AUC?
+
+<Option correct>5/6 <Why>Path (0,0) → (0,⅓) → (0,⅔) → (½,⅔) → (½,1) → (1,1); area ½·⅔ + ½·1 = 5/6. Pairwise: 0.8 and 0.6 beat both negatives, 0.3 beats one: 5 of 6.</Why></Option>
+<Option>1/2 <Why>That would be random ranking; here positives tend to score higher.</Why></Option>
+<Option>1 <Why>The negative at 0.5 outranks the positive at 0.3, so the ranking is not perfect.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Lowering the threshold on a fixed dataset…
+
+<Option correct>can never decrease recall, but can decrease precision. <Why>TP can only grow, so TPR cannot fall; precision depends on whether the new positives are true or false.</Why></Option>
+<Option>always increases precision. <Why>Adding mostly negatives lowers precision.</Why></Option>
+<Option>leaves FPR unchanged. <Why>FP can grow, so FPR can rise.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Model A has AUC 0.90, model B 0.85. Which statement is justified?
+
+<Option>A has higher accuracy at threshold 0.5. <Why>AUC summarises all thresholds; at a particular threshold B may be more accurate.</Why></Option>
+<Option correct>A ranks positives above negatives more often, averaged over thresholds. <Why>That is what AUC measures.</Why></Option>
+<Option>A’s probabilities are better calibrated. <Why>AUC ignores the score values — only their order matters.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A scorer plus a threshold is a classifier; sweeping the threshold traces the ROC curve of $(\FPR, \TPR)$ pairs. Crossing a positive steps up, crossing a negative steps right; AUC is the area under the path (1 = perfect ranking, 0.5 = random ranking). AUC depends only on the order of the scores and does not choose an operating threshold.
+</Callout>

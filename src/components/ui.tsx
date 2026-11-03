@@ -1,4 +1,5 @@
-import { useContext, useId, useState, type ReactNode } from 'react';
+import { Children, isValidElement, useContext, useId, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
+import { MB } from './Math';
 import { PageContext } from '../course/context';
 import { useStored } from '../lib/storage';
 
@@ -67,18 +68,25 @@ export function Callout({ kind, title, children }: { kind: CalloutKind; title?: 
   );
 }
 
-/** "Try this" prompts that turn a lab into a guided experiment. */
-export function TryThis({ items }: { items: ReactNode[] }) {
+/** "Try this" prompts that turn a lab into a guided experiment. In MDX, write a numbered list inside it. */
+export function TryThis({ children }: { children: ReactNode }) {
   return (
     <div className="trythis">
       <div className="trythis-head">Try this</div>
-      <ol>
-        {items.map((it, i) => (
-          <li key={i}>{it}</li>
-        ))}
-      </ol>
+      {children}
     </div>
   );
+}
+
+/** Split children into the elements of the given component types and everything else. */
+function pick<T extends object>(children: ReactNode, type: (p: T) => ReactNode) {
+  const hits: ReactElement<T>[] = [];
+  const rest: ReactNode[] = [];
+  Children.toArray(children).forEach((c) => {
+    if (isValidElement(c) && c.type === type) hits.push(c as ReactElement<T>);
+    else rest.push(c);
+  });
+  return [hits, rest] as const;
 }
 
 /* ---------------- reveal / steps ---------------- */
@@ -105,25 +113,34 @@ export function Reveal({
   );
 }
 
-export interface Step {
+interface StepProps {
   /** what we do in this step, shown as the step heading */
   title: ReactNode;
-  body: ReactNode;
+  children?: ReactNode;
 }
 
-/** A derivation you advance one step at a time, so you can predict the next line first. */
-export function Steps({ steps, intro }: { steps: Step[]; intro?: ReactNode }) {
+/** One step of a <Steps> derivation; only meaningful inside <Steps>. */
+export function Step({ children }: StepProps) {
+  return <>{children}</>;
+}
+
+/**
+ * A derivation you advance one step at a time, so you can predict the next line first.
+ * Children: optional intro content, then one <Step title="…"> per step.
+ */
+export function Steps({ children }: { children: ReactNode }) {
+  const [steps, intro] = pick(children, Step);
   const [shown, setShown] = useState(1);
   return (
     <div className="steps">
-      {intro && <div className="steps-intro">{intro}</div>}
+      {intro.length > 0 && <div className="steps-intro">{intro}</div>}
       <ol className="steps-list">
         {steps.slice(0, shown).map((s, i) => (
           <li key={i} className="step">
             <div className="step-num">{i + 1}</div>
             <div className="step-content">
-              <div className="step-title">{s.title}</div>
-              <div className="step-body">{s.body}</div>
+              <div className="step-title">{s.props.title}</div>
+              <div className="step-body">{s.props.children}</div>
             </div>
           </li>
         ))}
@@ -277,17 +294,32 @@ export function Picture({ src, alt, caption, width, invert }: { src: string; alt
 
 /* ---------------- quizzes & checklists ---------------- */
 
-export interface QuizOption {
-  text: ReactNode;
+interface OptionProps {
   correct?: boolean;
-  why: ReactNode;
+  children?: ReactNode;
+}
+
+/** One answer of a <Quiz>: its text, then a <Why> explaining why it is right or wrong. */
+export function Option({ children }: OptionProps) {
+  return <>{children}</>;
+}
+
+/** The explanation inside an <Option>, shown once that option (or the right one) is revealed. */
+export function Why({ children }: { children?: ReactNode }) {
+  return <>{children}</>;
 }
 
 /**
- * A multiple-choice check. The chosen answer is remembered between visits, stored under the
- * page's route id, so `id` only has to be unique within one lesson ("q1", "q2", …).
+ * A multiple-choice check. Children: the question, then one <Option> per answer.
+ * The chosen answer is remembered between visits, stored under the page's route id,
+ * so `id` only has to be unique within one lesson ("q1", "q2", …).
  */
-export function Quiz({ id, q, options }: { id: string; q: ReactNode; options: QuizOption[] }) {
+export function Quiz({ id, children }: { id: string; children: ReactNode }) {
+  const [opts, q] = pick(children, Option);
+  const options = opts.map((o) => {
+    const [why, text] = pick(o.props.children, Why);
+    return { text, correct: !!o.props.correct, why: why.map((w) => w.props.children) };
+  });
   const page = useContext(PageContext);
   const key = page ? `${page.id}.${id}` : id;
   const [picked, setPickedRaw] = useStored<number | null>(`quiz.${key}`, null);
@@ -297,9 +329,9 @@ export function Quiz({ id, q, options }: { id: string; q: ReactNode; options: Qu
     setPickedRaw(i);
     setResult(i === null ? null : i === correctIdx);
   };
-  const done = picked !== null;
+  const done = picked !== null && picked < options.length;
   return (
-    <div className={`quiz ${done ? (options[picked!]?.correct ? 'right' : 'wrong') : ''}`}>
+    <div className={`quiz ${done ? (options[picked!].correct ? 'right' : 'wrong') : ''}`}>
       <div className="quiz-q">
         <span className="quiz-tag">Check</span>
         <div>{q}</div>
@@ -391,6 +423,25 @@ export function Table({ head, rows, className }: { head: ReactNode[]; rows: Reac
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** A Markdown table (GFM pipes) in an MDX file, wrapped so it scrolls on narrow screens. */
+export function MdTable(props: ComponentProps<'table'>) {
+  return (
+    <div className="table-wrap">
+      <table {...props} />
+    </div>
+  );
+}
+
+/** One formula on a reference sheet, with an optional note on when it holds. */
+export function RefRow({ f, note }: { f: string; note?: ReactNode }) {
+  return (
+    <div className="ref-row">
+      <MB t={f} />
+      {note && <div className="ref-note">{note}</div>}
     </div>
   );
 }

@@ -1,0 +1,107 @@
+import { OneSELab, PruneLab } from '../labs/PruneLab';
+
+## Grow first, then simplify
+
+Post-pruning reverses the order of pre-pruning: grow a large tree, then look at each subtree and ask whether a single leaf in its place would do at least as well. Because the full tree is grown first, interactions that only pay off one level down (XOR) get a chance to appear before they are judged. The cost is extra computation, and the method is only as good as its estimate of “doing well” — which cannot be the training error, since that always favours the bigger tree.
+
+## Reduced-error pruning
+
+Split the labelled data into a **training set**, used to grow the tree, and a **validation set**, used only to judge pruning. To consider pruning an internal node:
+
+1. Replace its whole subtree by a leaf labelled with the *training* majority at that node.
+2. Compare validation errors before and after, counting only the validation examples that reach the node — predictions everywhere else are unchanged.
+3. Among all internal nodes, make the replacement that removes the most validation errors (ties go to the larger subtree). Never make one that adds errors.
+4. Repeat until every remaining replacement would increase the validation error.
+
+<Steps>
+One decision, by hand. A node’s training examples are 6 Yes and 4 No; eight validation examples reach it, 5 Yes and 3 No.
+
+<Step title="Label the candidate leaf">
+The training majority is Yes, so the replacement leaf predicts Yes.
+</Step>
+
+<Step title="Count its validation errors">
+It misclassifies the 3 validation No examples: 3 errors.
+</Step>
+
+<Step title="Compare with the subtree">
+If the subtree makes 4 errors on those eight examples, pruning removes one error — prune. If it makes 2, pruning would add one — keep it.
+</Step>
+</Steps>
+
+<Lab title="Reduced-error pruning, step by step" purpose="A full tree grown on 250 noisy training points; 150 validation points (hollow) decide the prunes; 2000 untouched test points check the result.">
+<PruneLab />
+</Lab>
+
+<TryThis>
+1. Step through the prunes. Each one cuts a whole subtree that the validation points do not support; the regions get simpler and the test error mostly falls with them.
+2. Compare the two curves at the end. The validation error is what pruning optimised, so it flatters the final tree; the test error is the honest estimate.
+3. Try new samples. The number of leaves that survive changes — pruning decisions inherit the noise of a 150-point validation set.
+</TryThis>
+
+<Callout kind="warning" title="What reduced-error pruning costs">
+The validation examples are taken away from growing the tree, which hurts most when data are scarce. And because many pruning choices are made by looking at the same validation set, its error becomes optimistic — keep a separate test set that plays no part in any of these decisions.
+</Callout>
+
+## Cross-validation and the one-standard-error rule
+
+Instead of a single validation split, estimate the error of several candidate tree sizes by cross-validation (Week 2), so every example is used both for growing and for validating — in different folds. Each estimate comes with a **standard error** (SE): its uncertainty as an estimate of a mean error.
+
+- The **minimum-error rule** picks the size with the smallest estimated error.
+- The **one-SE rule** picks the *smallest* tree whose estimated error is at most $\text{(minimum estimated error)} + \text{(SE of that minimum)}$. Differences smaller than the estimates’ own uncertainty are not treated as real, and the simpler tree gets the benefit of the doubt.
+
+<Table
+          className="num"
+          head={['Leaves', 'CV error', 'SE']}
+          rows={[
+            ['4', '0.180', '0.020'],
+            ['8', '0.137', '0.014'],
+            ['16', <strong>0.130</strong>, '0.010'],
+            ['32', '0.134', '0.012'],
+          ]}
+        />
+
+The minimum-error rule picks 16 leaves. The one-SE threshold is $0.130 + 0.010 = 0.140$; the trees with 8, 16 and 32 leaves are within it, and the smallest of those has **8 leaves**.
+
+<Lab title="Two selection rules" purpose="Drag any estimate up or down. The dashed line is the minimum plus its own SE; the two rings show what each rule picks.">
+<OneSELab />
+</Lab>
+
+<TryThis>
+1. Raise the 8-leaf estimate to 0.145. It is now above the threshold, so the one-SE rule moves to 16 leaves.
+2. Lower the 4-leaf estimate to 0.139: the one-SE rule jumps to the smallest tree.
+3. Lower the 32-leaf estimate below 0.130. The minimum moves, the threshold is recomputed from the new minimum’s SE, and the choice may change.
+</TryThis>
+
+<Callout kind="note" title="Standard error is not standard deviation">
+The SD describes how much individual fold errors vary; the SE describes uncertainty in their *mean* (roughly SD/√folds). The one-SE rule is a heuristic preference for simplicity among models whose estimated performance is indistinguishable — not a guarantee that their true errors are equal.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+In reduced-error pruning, the leaf that replaces a subtree predicts…
+
+<Option correct>the majority label of the training examples at that node <Why>The validation set judges the choice; it does not supply the label.</Why></Option>
+<Option>the majority label of the validation examples at that node <Why>Then the validation set would both fit and judge the leaf, making its error doubly optimistic.</Why></Option>
+<Option>the label of the largest child <Why>The leaf summarises all the node’s training examples.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Using the table above, which tree does the one-SE rule choose, and why not 4 leaves?
+
+<Option correct>8 leaves: the smallest with error ≤ 0.140; the 4-leaf tree’s 0.180 is above the threshold <Why>The threshold uses the SE of the minimum (0.010).</Why></Option>
+<Option>4 leaves: its error minus its own SE, 0.160, is the most favourable <Why>Each candidate’s own SE plays no part; only the minimum’s SE does.</Why></Option>
+<Option>16 leaves: it has the minimum error <Why>That is the minimum-error rule.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Why should a final test set play no part in pruning decisions?
+
+<Option correct>Because any set used to make choices becomes optimistic about the model it chose <Why>An independent test set is the only unbiased check left.</Why></Option>
+<Option>Because test sets are too small to prune with <Why>Size is not the issue; independence is.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Post-pruning grows the full tree, then replaces subtrees by leaves when a held-out estimate says the simpler tree is no worse. Reduced-error pruning uses a validation set and the training majority at each node; cross-validation compares tree sizes, and the one-SE rule picks the smallest tree within one standard error of the best. Every set used for choosing becomes optimistic, so keep a separate test set.
+</Callout>

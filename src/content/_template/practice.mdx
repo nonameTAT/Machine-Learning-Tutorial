@@ -1,0 +1,29 @@
+{/*
+  Practice problems. index.ts wires this file up as
+    import Practice, { blurb, groups } from './practice.mdx';
+    practice: { blurb, groups, page: Practice },
+  `groups` (ids, titles, lessons) is generated from the <Group> and <Problem> attributes below,
+  so keep those attributes plain strings. `lesson` is a lesson slug from index.ts.
+  Never rename a published problem id: self-ratings are stored under it.
+  Anything after the last </Group> (e.g. a list of common mistakes) is shown below the problems.
+*/}
+
+export const blurb = 'One line for the overview card.';
+
+<Group id="A" title="A · Derivations" intro="Show the main steps.">
+
+<Problem id="A1" title="Fit through the origin" lesson="example">
+
+Derive the least-squares slope $\hat\theta$ for $\hat y = \theta x$.
+
+<Hint>Differentiate the sum of squared errors and set it to zero.</Hint>
+
+<Solution>
+$$
+\frac{d}{d\theta}\sum_j (y_j - \theta x_j)^2 = -2\sum_j x_j(y_j - \theta x_j) = 0 \quad\Rightarrow\quad \hat\theta = \frac{\sum_j x_jy_j}{\sum_j x_j^2}.
+$$
+</Solution>
+
+</Problem>
+
+</Group>

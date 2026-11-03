@@ -1,0 +1,128 @@
+import { LikelihoodLab } from '../labs/LikelihoodLab';
+
+## The question: why squares?
+
+So far squared error has been justified by convenience: smooth, solvable, non-negative. That leaves an uncomfortable question — is it just a convenient choice, or is there a principled reason? The answer comes from telling a *story about how the data were generated*, and then asking which parameters make the observed data most plausible under that story. Squared error falls out.
+
+## A story about how observations arise
+
+A fitted rule cannot explain every measurement exactly: some influences are unmodelled or simply random. So write each observation as a predictable part plus an error:
+
+$$
+y = f(\bx) + \varepsilon, \qquad y_j = \bx_j\T\theta + \varepsilon_j.
+$$
+
+Now make an assumption about the errors: they are **independent and identically distributed** (i.i.d.) Gaussian with mean 0 and a common variance $\sigma^2$:
+
+$$
+\varepsilon_j \sim \N(0, \sigma^2), \qquad p(\varepsilon_j) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\Big(-\frac{\varepsilon_j^2}{2\sigma^2}\Big).
+$$
+
+Since $\varepsilon_j = y_j - \bx_j\T\theta$, this is the same as saying that, given the input, the output is Gaussian around the line:
+
+$$
+p(y_j\mid\bx_j;\theta) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\Big(-\frac{(y_j - \bx_j\T\theta)^2}{2\sigma^2}\Big), \qquad\text{i.e.}\qquad y_j\mid\bx_j \sim \N(\bx_j\T\theta, \sigma^2).
+$$
+
+<Callout kind="note">
+The mean of the Gaussian moves with the input; the spread does not. Also, this is a probability *density*: for a continuous $y$, the probability of any exact value is 0. Densities can exceed 1; what matters is comparing them.
+</Callout>
+
+## Choose the parameters that make the data most plausible
+
+Hold the observed data fixed and view the joint density as a function of $\theta$. That is the **likelihood**: $\Lik(\theta) = p(\by\mid X;\theta)$. Independence lets us multiply:
+
+$$
+\Lik(\theta) = \prod_{j=1}^m p(y_j\mid\bx_j;\theta) = \prod_{j=1}^m \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\Big(-\frac{(y_j - \bx_j\T\theta)^2}{2\sigma^2}\Big).
+$$
+
+**Maximum likelihood** picks the $\theta$ that maximises this. Note that $\Lik(\theta)$ is *not* a probability distribution over $\theta$ — it need not integrate to 1 over θ. It scores each candidate θ by how well it explains the observations.
+
+<Steps>
+Products of exponentials are awkward; logs turn them into sums. Because log is strictly increasing, it does not move the maximiser.
+
+<Step title="Take the log of the product">
+$$
+\ell(\theta) = \log\Lik(\theta) = \sum_{j=1}^m \Big[\log\frac{1}{\sqrt{2\pi\sigma^2}} - \frac{(y_j - \bx_j\T\theta)^2}{2\sigma^2}\Big].
+$$
+</Step>
+
+<Step title="Separate what depends on θ">
+$$
+\ell(\theta) = \underbrace{-\frac m2\log(2\pi\sigma^2)}_{\text{constant in }\theta} \;-\; \frac{1}{2\sigma^2}\underbrace{\sum_{j=1}^m (y_j - \bx_j\T\theta)^2}_{\SSE(\theta)}.
+$$
+</Step>
+
+<Step title="Maximising ℓ = minimising SSE">
+$$
+\boxed{\;\argmax_\theta\,\ell(\theta) = \argmin_\theta\,\SSE(\theta)\;}
+$$
+
+The first term does not involve θ, and the second is a *negative* constant times SSE. So the least-squares solution is the maximum-likelihood estimate. And Σ(yⱼ − xⱼᵀθ)² is just the SSE (RSS) from lesson 2.
+</Step>
+
+<Step title="σ² does not matter for θ">
+Changing $\sigma^2$ rescales the SSE term and shifts the constant, but every positive rescaling has the same minimiser. So you get the same $\hat\theta$ without knowing the noise level.
+</Step>
+</Steps>
+
+## See it
+
+<Lab title="Likelihood as a product of densities" purpose="Each data point is scored by the height of its Gaussian at the observed y (orange bar). The likelihood multiplies those heights; maximising it puts the line where the points sit near the peaks.">
+<LikelihoodLab />
+</Lab>
+
+<TryThis>
+1. Move the slope away from −1 and watch the orange bars: points far from the line sit in the thin tails, so their densities — and the product — collapse.
+2. Change σ. The whole ℓ curve moves and changes shape, but its peak stays at θ₁ = −1, exactly where SSE is smallest.
+3. Make σ very small (0.5). The likelihood becomes extremely sensitive to the worst point — a probabilistic view of outlier sensitivity.
+4. Press “Set σ = √(SSE/m)” at θ₁ = −1. That is the maximum-likelihood estimate of σ (here √8 ≈ 2.83).
+</TryThis>
+
+## Where each assumption was used
+
+| Assumption | Where it entered |
+| --- | --- |
+| Linear mean 𝐱ⱼᵀθ | it is the centre of each Gaussian |
+| Errors have mean 0 | centres the Gaussian on the line rather than above or below it |
+| Common variance σ² | every squared residual gets the same weight 1/(2σ²); unequal variances would give weighted least squares |
+| Independence | lets the joint density factor into a product, so the log becomes a sum |
+| Gaussian shape | its log is −(error)²/(2σ²): this is literally where the square comes from |
+
+<Callout kind="warning" title="Keep the implication pointing the right way">
+Gaussian i.i.d. errors *justify* squared loss through maximum likelihood. The converse is false: you can define and solve least squares without assuming anything about the noise. The optimisation problem and its probabilistic interpretation are separate claims.
+</Callout>
+
+<Callout kind="intuition" title="Different noise, different loss (going deeper)">
+Swap the Gaussian for a Laplace distribution, $p(\varepsilon) \propto \exp(-|\varepsilon|/b)$. The same steps give $\ell(\theta) = \text{const} - \tfrac1b\sum_j|y_j - \bx_j\T\theta|$, so maximum likelihood now minimises the sum of *absolute* errors. Heavier-tailed noise expects occasional large errors and therefore punishes them less — which is why absolute loss is more robust to outliers. The choice of loss is a hidden assumption about the noise.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+Which step of the derivation uses the independence assumption?
+
+<Option correct>Writing the joint density as a product over j. <Why>Only for independent observations does p(𝐲|X;θ) factor into Πⱼ p(yⱼ|𝐱ⱼ;θ).</Why></Option>
+<Option>Taking the logarithm. <Why>The log is valid for any positive function; it needs no assumption.</Why></Option>
+<Option>Dropping −(m/2)log(2πσ²). <Why>That uses only that the term does not depend on θ.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Doubling σ (keeping everything else fixed) changes the maximum-likelihood θ̂ how?
+
+<Option>θ̂ doubles. <Why>σ² multiplies the SSE term by a positive constant; the minimiser of SSE is unaffected.</Why></Option>
+<Option correct>θ̂ is unchanged. <Why>σ² does not affect the choice of θ.</Why></Option>
+<Option>θ̂ becomes zero. <Why>Nothing in the derivation pushes θ towards zero.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Your residuals clearly have a heavy-tailed, non-Gaussian distribution. Which statement is correct?
+
+<Option>Least squares can no longer be computed. <Why>The normal equations do not depend on the noise distribution at all.</Why></Option>
+<Option correct>Least squares still computes, but its maximum-likelihood justification no longer applies; a more robust loss may be better. <Why>The optimisation is fine; the probabilistic interpretation is what weakens.</Why></Option>
+<Option>Taking logs of y fixes it automatically. <Why>Transformations can help in some cases but there is no automatic fix.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+If $y_j = \bx_j\T\theta + \varepsilon_j$ with i.i.d. $\varepsilon_j\sim\N(0,\sigma^2)$, then $\ell(\theta) = -\tfrac m2\log(2\pi\sigma^2) - \SSE(\theta)/(2\sigma^2)$, so maximum likelihood is exactly least squares, and σ² does not affect $\hat\theta$. The square in the loss is the log of the Gaussian.
+</Callout>

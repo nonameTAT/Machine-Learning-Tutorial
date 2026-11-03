@@ -1,0 +1,84 @@
+import { ModelTreeLab } from '../labs/ModelTreeLab';
+
+## Why change what a leaf predicts?
+
+A regression tree predicts a constant in every region. If the target rises steadily inside a region, the constant throws that trend away, and the tree has to spend many extra leaves building a staircase. A **model tree** keeps the partition but fits a small model in each leaf — usually a linear regression:
+
+$$
+\hat f(x) = \beta_{\ell,0} + \sum_j \beta_{\ell,j}\,x_j \qquad \text{for } x \text{ in leaf } \ell.
+$$
+
+The same feature can do two jobs: decide which leaf an input reaches, and appear in that leaf’s equation. The tree handles changes of regime; the local lines handle trends within a regime.
+
+## The cosine example
+
+Take $y = \cos(\pi x)$ on $[-1, 1]$: up from −1 to 1 and back down. With points spread symmetrically, the best single least-squares line is flat. The slope is zero because the data are symmetric about $x = 0$ (every rise on the left is mirrored by a fall on the right), and the intercept is the mean of $y$, which is essentially zero. One line explains nothing.
+
+Split at 0 and fit a line on each side, and the picture changes completely: two lines close to $2x + 1$ on the left and $-2x + 1$ on the right (the lines joining the ends to the peak; the exact least-squares lines differ slightly). One split, two leaves, almost all the shape captured.
+
+<Lab title="One split: constants or lines in the leaves?" purpose="41 evenly spaced points from cos(πx). Move the split and switch the leaf model. The right chart scores every possible split point in two different ways.">
+<ModelTreeLab />
+</Lab>
+
+<TryThis>
+1. Linear leaves, split near 0: the total squared error falls from about 21 (one flat line) to about 0.34.
+2. Constant leaves: the best single split still leaves about 15 — two constants cannot follow a rise and a fall.
+3. Look at the right chart. The standard-deviation reduction (amber) is nearly zero at s = 0 and peaks near ±0.63, while the error of linear leaves (teal) is best exactly at 0. The two criteria want different splits.
+4. Add noise: the curves get rougher, but the disagreement remains.
+</TryThis>
+
+## Growing and pruning a model tree
+
+The classic model-tree learner (M5) chooses splits by **standard deviation reduction**:
+
+$$
+\operatorname{SDR} = \operatorname{sd}(S) - \sum_v \frac{|S_v|}{|S|}\,\operatorname{sd}(S_v),
+$$
+
+the largest reduction wins. It uses standard deviations, not variances. Because a square root is not linear, SDR need not rank candidates the same way as the MSE reduction of a regression tree. Growth stops when a node has too few examples or its targets’ standard deviation is small relative to the whole training set’s (the exact thresholds are design choices). Afterwards a linear model is fitted at each node, terms that do not justify their complexity are dropped, and a subtree is replaced by its node’s linear model when that is estimated to predict at least as well.
+
+<Callout kind="intuition" title="Why SDR misses the cosine split">
+SDR asks how much a split reduces the *spread of the targets*. Split the symmetric cosine at 0 and each half contains the same y values as the whole — the same spread — so SDR is almost exactly zero there. But linear leaves do not care about the spread of y; they care about the residuals around a fitted line, and those are tiny at s = 0. SDR is the right question for constant leaves and only a proxy for linear ones. It needs nothing but running sums, whereas scoring every candidate by fitted lines needs a regression per candidate; the pruning stage, which does fit the lines, partly repairs the mismatch.
+</Callout>
+
+## Categorical predictors inside a linear leaf
+
+A leaf’s linear model needs numbers, so categorical predictors must be encoded — and the encoding is an assumption.
+
+| Encoding | What it does | When it fits |
+| --- | --- | --- |
+| One-hot | one 0/1 indicator column per category | unordered categories; each gets its own shift |
+| Integer codes | categories mapped to 1, 2, 3, … | only if the order and the equal spacing mean something |
+| Binary encoding | the integer code written in bits, one column per bit | many categories, fewer columns than one-hot |
+| Hashing | categories hashed into a fixed number of columns | very many categories; different categories can collide |
+
+Integer-coding the organ models as A100 = 1, B3 = 2, … would tell a linear leaf that B3 lies “between” A100 and E112 and that the gaps are equal — structure that does not exist.
+
+## Check your understanding
+
+<Quiz id="q1">
+For evenly spaced points of y = cos(πx) on [−1, 1], what is the least-squares line?
+
+<Option correct>Essentially y = 0: zero slope by symmetry and zero mean <Why>Every rise on the left is mirrored by a fall on the right.</Why></Option>
+<Option>y = 1 − 2|x| <Why>That is not a line; it is what two linear leaves approximate.</Why></Option>
+<Option>A line through (−1, −1) and (1, −1) <Why>Those points are on the curve, but the least-squares line must balance all the residuals.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Why is the standard-deviation reduction almost zero for a split at x = 0 in the symmetric cosine data?
+
+<Option correct>Each half contains the same multiset of y values as the whole, so its spread is unchanged <Why>SDR only sees the spread of targets, not trends within a leaf.</Why></Option>
+<Option>Because the split is in the middle <Why>A middle split of other data can have a large SDR.</Why></Option>
+<Option>Because linear leaves fit the halves badly <Why>They fit them very well; SDR simply does not look at fitted lines.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+Why is integer-coding unordered categories risky inside a linear leaf?
+
+<Option correct>It imposes an order and equal spacing that the categories do not have <Why>The coefficient then treats category 3 as “one more” than category 2.</Why></Option>
+<Option>Linear models cannot use integers <Why>They can; the problem is the meaning of the numbers.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+A model tree keeps the adaptive partition and fits a linear model in each leaf, so trends inside a region cost no extra leaves — one split turns the useless flat line for cos(πx) into an almost perfect fit. M5 grows with standard-deviation reduction, which measures spread of the targets and can miss splits that linear leaves would love; pruning with fitted models partly corrects this. Encode categorical predictors deliberately.
+</Callout>

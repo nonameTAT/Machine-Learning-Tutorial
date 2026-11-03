@@ -1,0 +1,120 @@
+import { FishBayesLab } from '../labs/FishBayesLab';
+
+## Deciding from the prior alone
+
+Back to the fish. From past catches, 30% are salmon and 70% sea bass. With no measurement at all, the best guess is always “sea bass”. This *decision rule based on the prior* is right 70% of the time — and never predicts salmon. Measurements should let us do better.
+
+Suppose we also know how lengths are distributed *within* each species — the class-conditional probabilities:
+
+<Table
+          head={['P(x | c)', 'salmon', 'sea bass']}
+          rows={[
+            ['length > 100 cm', '0.5', '0.3'],
+            ['50 cm < length < 100 cm', '0.4', '0.5'],
+            ['length < 50 cm', '0.1', '0.2'],
+          ]}
+        />
+
+Each column sums to 1: it is a distribution over lengths *for one class*. What we want is the reverse, $P(c \mid x)$: given this length, which species?
+
+## Bayes’ theorem
+
+<Steps>
+Bayes’ theorem is not a new axiom — it falls out of describing one joint event in two orders.
+
+<Step title="Conditioning restricts attention">
+$$
+P(A \mid B) = \frac{P(A \wedge B)}{P(B)}, \qquad P(B) > 0 \quad\text{}.
+$$
+</Step>
+
+<Step title="The product rule, both ways round">
+$$
+P(A \wedge B) = P(A \mid B)P(B) = P(B \mid A)P(A).
+$$
+</Step>
+
+<Step title="Equate and divide">
+$$
+\boxed{\;P(c \mid x) = \frac{P(x \mid c)\,P(c)}{P(x)}\;}
+$$
+</Step>
+
+<Step title="Total probability gives the denominator">
+$$
+P(x) = \sum_{c'} P(x \mid c')\,P(c')
+$$
+
+valid because the classes are mutually exclusive and exhaustive. It is exactly what makes the posteriors sum to 1.
+</Step>
+</Steps>
+
+| Quantity | Name | Question it answers |
+| --- | --- | --- |
+| $P(c)$ | prior | how common is the class before seeing x? |
+| $P(x \mid c)$ | likelihood (class-conditional) | if the class were c, how plausible is x? |
+| $P(x)$ | evidence (marginal) | how plausible is x across all classes? |
+| $P(c \mid x)$ | posterior | after seeing x, how plausible is c? |
+
+The same formula is often written with a hypothesis $h$ and training data $D$ in place of a class and an observation: $P(h \mid D) = P(D \mid h)P(h)/P(D)$ — lesson 3 uses that form.
+
+<Callout kind="warning">
+$P(x \mid c)$ and $P(c \mid x)$ answer different questions; never swap them by intuition. And the sum rule is $P(A \vee B) = P(A) + P(B) - P(A \wedge B)$ — plain addition only works for disjoint events.
+</Callout>
+
+## Worked example: a 70 cm fish
+
+<Callout kind="example">
+70 cm falls in the 50–100 cm bin. Multiply likelihood by prior:
+
+| class | prior | likelihood | product | posterior |
+| --- | --- | --- | --- | --- |
+| salmon | 0.3 | 0.4 | 0.12 | $0.12/0.47 \approx 0.2553$ |
+| sea bass | 0.7 | 0.5 | 0.35 | $0.35/0.47 \approx 0.7447$ |
+
+The evidence is $0.12 + 0.35 = 0.47$; predict sea bass. To *choose* a class you can compare 0.12 with 0.35 directly — dividing both by the same positive number cannot change their order. Note we are modelling a length *bin*, not one exact continuous length.
+</Callout>
+
+<Lab title="Bayes’ rule as areas" purpose="Pick a length bin and change the prior. The highlighted blocks are the two ways to observe that length.">
+<FishBayesLab />
+</Lab>
+
+<TryThis>
+1. For “> 100 cm” with the default prior, salmon’s block (0.5 × 0.3 = 0.15) is smaller than sea bass’s (0.3 × 0.7 = 0.21): sea bass still wins, although long fish are more typical of salmon.
+2. Raise P(salmon) until a fish over 100 cm is classified as salmon. At what prior does it switch? (Solve 0.5π = 0.3(1 − π).)
+3. Choose “\< 50 cm”: the likelihoods favour sea bass and so does the prior. Evidence and prior agree.
+</TryThis>
+
+<Callout kind="note" title="Scores versus probabilities">
+$s_c = P(x \mid c)P(c)$ is an unnormalised score (for discrete $x$ it is the joint probability $P(x, c)$). The posterior is $s_c / \sum_{c'} s_{c'}$. Drop the denominator for an argmax, never when a probability is asked for.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+With the priors (0.3, 0.7), what is P(salmon | length > 100 cm)?
+
+<Option>0.5 <Why>That is P(length > 100 | salmon), the likelihood.</Why></Option>
+<Option correct>0.15/0.36 ≈ 0.417 <Why>Scores 0.5 × 0.3 = 0.15 and 0.3 × 0.7 = 0.21; evidence 0.36.</Why></Option>
+<Option>0.15 <Why>0.15 is the unnormalised score; divide by the evidence.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+Why is it safe to ignore P(x) when choosing the most probable class?
+
+<Option>Because P(x) = 1. <Why>P(x) is usually far below 1.</Why></Option>
+<Option correct>Because it is the same positive number for every class at this x, so it cannot change the order. <Why>It matters only when you report probabilities.</Why></Option>
+<Option>Because the classes are independent. <Why>Independence plays no role here.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+P(A) = 0.5, P(B) = 0.4, P(A ∧ B) = 0.2. What is P(A ∨ B)?
+
+<Option>0.9 <Why>Plain addition double-counts the overlap.</Why></Option>
+<Option correct>0.7 <Why>Sum rule: 0.5 + 0.4 − 0.2.</Why></Option>
+<Option>0.2 <Why>That is the intersection.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Bayes’ theorem $P(c \mid x) = P(x \mid c)P(c)/\sum_{c'}P(x \mid c')P(c')$ reverses a conditional: it combines how plausible the observation is under each class with how common each class is. The evidence normalises; for a decision, compare the scores $P(x \mid c)P(c)$.
+</Callout>

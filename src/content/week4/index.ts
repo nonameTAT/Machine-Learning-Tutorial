@@ -1,24 +1,24 @@
 import { defineWeek } from '../../course/types';
-import Overview from './Overview';
-import Reference from './Reference';
-import practice from './practice';
-import Partition from './lessons/Partition';
-import Expressiveness from './lessons/Expressiveness';
-import Tdidt from './lessons/Tdidt';
-import Entropy from './lessons/Entropy';
-import Gain from './lessons/Gain';
-import PlayTennis from './lessons/PlayTennis';
-import GainRatio from './lessons/GainRatio';
-import Numeric from './lessons/Numeric';
-import Greedy from './lessons/Greedy';
-import Overfitting from './lessons/Overfitting';
-import Conflicts from './lessons/Conflicts';
-import Pruning from './lessons/Pruning';
-import Practical from './lessons/Practical';
-import RegTree from './lessons/RegTree';
-import RegSplit from './lessons/RegSplit';
-import ModelTree from './lessons/ModelTree';
-import Kernel from './lessons/Kernel';
+import Overview from './Overview.mdx';
+import Reference from './Reference.mdx';
+import Practice, { blurb, groups } from './practice.mdx';
+import Partition from './lessons/Partition.mdx';
+import Expressiveness from './lessons/Expressiveness.mdx';
+import Tdidt from './lessons/Tdidt.mdx';
+import Entropy from './lessons/Entropy.mdx';
+import Gain from './lessons/Gain.mdx';
+import PlayTennis from './lessons/PlayTennis.mdx';
+import GainRatio from './lessons/GainRatio.mdx';
+import Numeric from './lessons/Numeric.mdx';
+import Greedy from './lessons/Greedy.mdx';
+import Overfitting from './lessons/Overfitting.mdx';
+import Conflicts from './lessons/Conflicts.mdx';
+import Pruning from './lessons/Pruning.mdx';
+import Practical from './lessons/Practical.mdx';
+import RegTree from './lessons/RegTree.mdx';
+import RegSplit from './lessons/RegSplit.mdx';
+import ModelTree from './lessons/ModelTree.mdx';
+import Kernel from './lessons/Kernel.mdx';
 
 export default defineWeek({
   n: 4,
@@ -252,7 +252,7 @@ export default defineWeek({
       ],
     },
   ],
-  practice,
+  practice: { blurb, groups, page: Practice },
   reference: Reference,
   readiness: {
     items: [

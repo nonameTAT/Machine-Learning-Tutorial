@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Chart, Legend, pathOf, svgPoint } from '../../../components/Chart';
 import { M } from '../../../components/Math';
-import { Plot } from '../../../components/Plot';
+import { lazy3D } from '../../../components/View3D';
 import { Readout, Segmented, Slider, Toggle } from '../../../components/ui';
 import { eig2, fmt, linspace } from '../../../lib/num';
-import { cssVar, useResolvedTheme } from '../../../lib/theme';
 import { EX_X, EX_Y } from './ResidualLab';
 
 type Mode = 'batch' | 'sgd';
 type P = [number, number];
 const MAX_PATH = 4000;
+const Bowl3D = lazy3D(() => import('./GDBowlScene'));
 
 function setup(centred: boolean) {
   const mx = 7;
@@ -111,6 +111,8 @@ export function GDLab() {
         S.opt[1] + r1 * Math.cos(u) * S.eig.v1[1] + r2 * Math.sin(u) * S.eig.v2[1],
       ];
     });
+
+  const contours = useMemo(() => levels.map(ellipse), [S]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // loss-gap history, on a log scale
   const gaps = path.map((p) => Math.max(1e-8, S.J(p) - S.Jstar));
@@ -275,61 +277,10 @@ export function GDLab() {
               </tbody>
             </table>
           </div>
-          <Toggle label="Show the loss bowl in 3-D (Plotly)" checked={show3d} onChange={setShow3d} />
+          <Toggle label="Show the loss bowl in 3-D" checked={show3d} onChange={setShow3d} />
         </div>
       </div>
-      {show3d && <Bowl3D S={S} path={path} xd={xd} yd={yd} />}
+      {show3d && <Bowl3D height={460} J={S.J} path={path} opt={S.opt} xd={xd} yd={yd} contours={contours} />}
     </div>
   );
-}
-
-function Bowl3D({ S, path, xd, yd }: { S: ReturnType<typeof setup>; path: P[]; xd: [number, number]; yd: [number, number] }) {
-  const theme = useResolvedTheme();
-  const data = useMemo(() => {
-    const t0 = linspace(xd[0], xd[1], 40);
-    const t1 = linspace(yd[0], yd[1], 40);
-    // values above the axis range are clipped by Plotly rather than flattened, so the bowl keeps its shape
-    const z = t1.map((b) => t0.map((a) => S.J([a, b])));
-    const pts = path.filter((p) => Number.isFinite(p[0]) && Math.abs(p[0]) < 1e3);
-    const step = Math.max(1, Math.ceil(pts.length / 400));
-    const sub = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
-    return [
-      {
-        type: 'surface',
-        x: t0,
-        y: t1,
-        z,
-        opacity: 0.85,
-        colorscale: 'Viridis',
-        showscale: false,
-        name: 'J(θ)',
-        cmin: 0,
-        cmax: 400,
-        hovertemplate: 'θ₀ %{x:.2f}<br>θ₁ %{y:.2f}<br>J %{z:.2f}<extra></extra>',
-      },
-      {
-        type: 'scatter3d',
-        mode: 'lines+markers',
-        x: sub.map((p) => p[0]),
-        y: sub.map((p) => p[1]),
-        z: sub.map((p) => S.J(p) + 1),
-        line: { color: cssVar('--c-res') || '#e0592a', width: 5 },
-        marker: { size: 2.5, color: cssVar('--c-res') || '#e0592a' },
-        name: 'GD path',
-      },
-    ] as Plotly.Data[];
-  }, [S, path, xd, yd, theme]);
-  const layout = useMemo<Partial<Plotly.Layout>>(
-    () => ({
-      scene: {
-        xaxis: { title: { text: 'θ₀' } },
-        yaxis: { title: { text: 'θ₁' } },
-        zaxis: { title: { text: 'J(θ)' }, range: [0, 400] },
-        camera: { eye: { x: 1.5, y: -1.6, z: 0.9 } },
-        aspectmode: 'cube',
-      },
-    }),
-    [],
-  );
-  return <Plot data={data} layout={layout} height={440} />;
 }

@@ -1,0 +1,118 @@
+import { KNNLab, ScaleLab } from '../labs/KNNLab';
+
+## A different hypothesis about the data
+
+Everything so far has been *global*: one coefficient vector $\theta$ describes the whole input space. Local learning starts from a different intuition: **inputs that are close should have similar outputs**. So instead of summarising the data in a formula, keep the data, and when a query arrives, look at the training examples near it.
+
+- It is the simplest form of learning — rote learning, or memorisation — made useful by a notion of similarity.
+- The instances themselves represent the knowledge. Names: nearest-neighbour, instance-based, memory-based, case-based learning.
+- It is **lazy**: there is no training phase that builds a model; the work happens at prediction time.
+- The **distance function defines what is learned** — it is what lets the method go beyond pure memorisation.
+
+## Nearest neighbour and k-nearest-neighbour regression
+
+Store all training examples $(\bx_i, f(\bx_i))$. Given a query $\bx_q$:
+
+- **1-NN:** find the nearest training input $\bx_n$ and predict $\hat y_q = f(\bx_n)$.
+- **k-NN:** average the targets of the $k$ nearest neighbours:
+
+$$
+\hat y_q = \frac{1}{k}\sum_{i=1}^{k} f(\bx_i), \qquad \bx_1,\dots,\bx_k \text{ the } k \text{ training inputs closest to } \bx_q.
+$$
+
+This averages *numeric targets* — it is not the majority vote used for classification.
+
+The usual distance is Euclidean over the $n$ features:
+
+$$
+d(\bx_i, \bx_j) = \sqrt{\sum_{k=1}^n (x_{ik} - x_{jk})^2}.
+$$
+
+<Callout kind="example" title="By hand">
+Store $(x, y) = (0,0), (2,2), (5,5), (9,9)$ and query $x_q = 3$. Distances: 3, 1, 2, 6. The nearest point is $x = 2$, so 1-NN predicts 2. The two nearest are $x = 2, 5$, so 2-NN predicts $(2 + 5)/2 = 3.5$.
+</Callout>
+
+<Lab title="k-NN and local regression" purpose="Drag across the plot to move the query. The shaded band is the neighbourhood; orange points are the neighbours used.">
+<KNNLab />
+</Lab>
+
+<TryThis>
+1. With k = 1 and the full curve shown, the prediction is a step function that jumps at midpoints between training inputs and passes through every training point. Training error is 0 — is that good?
+2. Increase k slowly. The curve smooths out; at k = 24 (= m) it is a flat line at ȳ, whatever the query.
+3. Switch to the local linear fit with k ≈ 5. Compare with k-NN averaging near the edges (x near 0 or 10), where all neighbours lie on one side.
+4. Show the true mean and find the k that tracks it best by eye. Small k is noisy (variance); large k flattens the curve (bias).
+</TryThis>
+
+## Local regression
+
+Averaging assumes the target is roughly *constant* within the neighbourhood. A natural refinement: fit a small linear model $\hat f(\bx) = \theta_0 + \theta_1x_1 + \dots + \theta_nx_n$ to the $k$ nearest neighbours of $\bx_q$, then evaluate it at $\bx_q$. A fresh fit is made for each query.
+
+- Linear, quadratic or higher-order local models can be used.
+- The result is a piecewise approximation, useful for nonlinear functions or data whose behaviour changes across the input space.
+
+In the by-hand example, the two nearest points $(2,2), (5,5)$ lie on $y = x$, so the local line predicts 3 at $x_q = 3$ — different from the 2-NN average 3.5. Averaging and fitting a local trend make different assumptions about the same neighbourhood.
+
+<Callout kind="warning">
+A unique unregularised local linear fit with $n$ features needs at least $n + 1$ neighbours with a full-rank local design matrix. In higher dimensions or with small neighbourhoods, local fits can be unstable.
+</Callout>
+
+## What controls the behaviour
+
+| Choice | Effect |
+| --- | --- |
+| small k | follows individual points (and their noise): low bias, high variance; k = 1 has zero training error |
+| large k | averages over more points: lower variance, but washes out local structure (higher bias); k = m predicts ȳ everywhere |
+| distance & feature scale | decide who counts as a neighbour — part of the model, not a detail |
+| local model (mean vs line) | what is assumed constant inside the neighbourhood |
+
+k is a hyperparameter: choose it with validation data, just like λ or the polynomial degree.
+
+<Lab title="Feature scale changes who the neighbours are" purpose="Predict a house price with 2-NN. Toggle standardisation and watch the neighbours change.">
+<ScaleLab />
+</Lab>
+
+<Callout kind="note">
+A constant column of ones contributes nothing to a distance, so the intercept trick is irrelevant here. As with the penalty in lesson 10, scaling constants must be computed from the training data only.
+</Callout>
+
+## Parametric vs non-parametric; costs
+
+|  | Linear regression (parametric) | k-NN (non-parametric) |
+| --- | --- | --- |
+| What is stored | n + 1 coefficients | the whole training set |
+| Training cost | solve normal equations / run GD | essentially none (lazy) |
+| Cost per prediction | $O(n)$ | $O(mn)$ |
+| Shape of the fit | fixed by the features you chose | adapts to the data; grows with m |
+
+<Callout kind="intuition" title="Going deeper: the curse of dimensionality">
+In many dimensions, almost all points are far from each other and distances become similar, so “nearest” neighbours are not very near. Local methods need far more data as $n$ grows. This is one reason feature selection and dimensionality reduction matter.
+</Callout>
+
+## Check your understanding
+
+<Quiz id="q1">
+Store (0, 1), (2, 3), (5, 7), (8, 9). For x_q = 3, what are the 1-NN and 2-NN regression predictions?
+
+<Option correct>3 and 5 <Why>Distances 3, 1, 2, 5. Nearest is (2, 3) → 3; the two nearest are (2, 3) and (5, 7) → (3 + 7)/2 = 5.</Why></Option>
+<Option>3 and 4 <Why>4 = (1 + 7)/2 averages (0, 1) and (5, 7), but the nearest point is (2, 3) at distance 1, so it must be one of the two.</Why></Option>
+<Option>7 and 5 <Why>The nearest point is at distance 1, i.e. x = 2.</Why></Option>
+</Quiz>
+
+<Quiz id="q2">
+What does k-NN regression predict when k equals the number of training examples?
+
+<Option correct>The training mean ȳ, for every query. <Why>Every query’s neighbourhood is the whole training set.</Why></Option>
+<Option>The nearest training target. <Why>That is k = 1.</Why></Option>
+<Option>The OLS line. <Why>k-NN averaging never fits a line.</Why></Option>
+</Quiz>
+
+<Quiz id="q3">
+“k-NN is lazy, so there is no model to choose.” Evaluate.
+
+<Option>True: the data are the model. <Why>The data are stored, but k, the distance, the feature scaling and the local rule are all modelling choices.</Why></Option>
+<Option correct>False: k, the distance function, feature scaling and the local averaging/fitting rule determine the predictions. <Why>“Lazy” means the computation happens at query time, not that there are no choices.</Why></Option>
+</Quiz>
+
+<Callout kind="key">
+Local methods predict from training examples near the query: k-NN averages their targets; local regression fits a small model to them. The distance (and therefore feature scaling) defines similarity; k trades variance (small k) against bias (large k, down to the constant ȳ at k = m). No global parameters are learned, but there are just as many modelling choices.
+</Callout>
