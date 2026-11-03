@@ -184,17 +184,22 @@ function Sidebar({ route, week }: { route: string; week: Week }) {
   const { lessons, pages } = week;
   const n = lessons.filter((l) => done[l.id]).length;
   const current = PAGES.get(route)?.part;
-  // a part is open if it holds the current page, unless the reader toggled it; toggles reset per week
-  const [toggled, setToggled] = useState<{ week: number; parts: Set<string> }>({ week: week.n, parts: new Set() });
-  const flipped = toggled.week === week.n ? toggled.parts : new Set<string>();
+  // Open parts, remembered per week. Visiting a page opens its part; only the reader's own clicks close one,
+  // so moving between pages never collapses anything.
+  const [openParts, setOpenParts] = useState<Record<number, string[]>>(() => ({ [week.n]: current ? [current] : [] }));
+  const [seenRoute, setSeenRoute] = useState(route);
+  if (seenRoute !== route) {
+    setSeenRoute(route);
+    if (current && !openParts[week.n]?.includes(current)) setOpenParts((s) => ({ ...s, [week.n]: [...(s[week.n] ?? []), current] }));
+  }
+  const opened = openParts[week.n] ?? [];
   const fixed = (p: string) => p === week.parts[0] || p === week.parts[week.parts.length - 1];
-  const isOpen = (p: string) => fixed(p) || (p === current) !== flipped.has(p);
-  const toggle = (p: string) => {
-    const next = new Set(flipped);
-    if (next.has(p)) next.delete(p);
-    else next.add(p);
-    setToggled({ week: week.n, parts: next });
-  };
+  const isOpen = (p: string) => fixed(p) || opened.includes(p);
+  const toggle = (p: string) =>
+    setOpenParts((s) => {
+      const cur = s[week.n] ?? [];
+      return { ...s, [week.n]: cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p] };
+    });
   return (
     <nav className="sidebar" aria-label="Lessons">
       <div className="side-weeks">
